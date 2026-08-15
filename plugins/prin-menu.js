@@ -267,5 +267,6 @@ const handler = async (m, { conn, usedPrefix, participants }) => {
 handler.help = ['menu']
 handler.tags = ['main']
 handler.command = ['menu', 'help', 'ayuda']
+handler.register = true
 
 export default handler
