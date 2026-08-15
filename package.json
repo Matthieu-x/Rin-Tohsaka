@@ -1,5 +1,5 @@
 {
-  "name": "Michi-WaBot",
+  "name": "Rin-Tohsaka",
   "version": "1.3.2",
   "description": "WhatsApp Bot Multi Device - Michi-WaBot",
   "main": "index.js",
@@ -13,14 +13,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Edward-oficial/Michi-WaBot.git"
+    "url": "git+https://github.com/Edward-oficial/Rin-Tohsaka.git"
   },
   "author": "Duan",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Edward-oficial/Michi-WaBot/issues"
+    "url": "https://github.com/Edward-oficial/Rin-Tohsaka/issues"
   },
-  "homepage": "https://github.com/Edward-oficial/Michi-WaBot#readme",
+  "homepage": "https://github.com/Edward-oficial/Rin-Tohsaka#readme",
   "dependencies": {
     "@bochilteam/scraper": "^4.2.4",
     "@hapi/boom": "^10.0.1",
