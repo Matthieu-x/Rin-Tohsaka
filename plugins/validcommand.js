@@ -76,7 +76,8 @@ const handler = async function (m, { conn, chat }) {
 
   let texto = `${SIMBOLO} *Comando no encontrado*\n\n`
   texto += `> El comando *${usedPrefix}${comando}* no existe\n`
-  texto += `> Usa *${usedPrefix}menu* para ver la lista completa de comandos disponibles`
+  texto += `> Usa *${usedPrefix}menu* para ver la lista completa de comandos disponibles\n`
+  texto += `> .・。.・゜〄・.・〄・゜・。.`
 
   await conn.sendMessage(
     m.chat,
