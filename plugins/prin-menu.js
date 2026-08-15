@@ -267,6 +267,6 @@ const handler = async (m, { conn, usedPrefix, participants }) => {
 handler.help = ['menu']
 handler.tags = ['main']
 handler.command = ['menu', 'help', 'ayuda']
-handler.register = true
+handler.description = 'Muestra el menú principal de la bot.'
 
 export default handler
