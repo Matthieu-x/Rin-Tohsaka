@@ -1,49 +1,78 @@
-# 「✦」Michi-WaBot
+<div align="center">
 
-![Michi-WaBot Banner](https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif)
+# ꕥ Rin-Tohsaka
 
-「✦」¿Qué es Michi-WaBot?  
-> ✐ Michi-WaBot es un bot para WhatsApp enfocado en la diversión, utilidad y automatización de tareas, construido usando Baileys (baileysxz) para interactuar con WhatsApp Web.
+> WhatsApp Bot Multi-Device basado en Baileys
 
----
-
-「✦」Funcionalidades
-
-> ✰ Responde a comandos personalizados  
-> ✰ Envío de stickers, imágenes, audio y texto  
-> ✰ Juegos y utilidades sencillas  
-> ✰ Automatización de respuestas  
-> ✰ Sistema de economía, gacha, grupos y más
+</div>
 
 ---
 
-「✦」Instalación rápida
+## 〄 Sobre el proyecto
+
+> Rin-Tohsaka es un bot de WhatsApp construido sobre una arquitectura de plugins modular, con soporte para sub-bots, sistema de economía, moderación de grupos y comandos de inteligencia artificial.
+
+---
+
+## ꕥ Creadores
+
+<table align="center">
+<tr>
+<td align="center">
+<a href="https://github.com/Edward-oficial">
+<img src="https://github.com/Edward-oficial.png" width="120" style="border-radius:50%" alt="Duan" /><br />
+<b>Duan</b>
+</a>
+<br />
+<sub>@Edward-oficial</sub>
+</td>
+<td align="center">
+<a href="https://github.com/BrayanRK">
+<img src="https://github.com/BrayanRK.png" width="120" style="border-radius:50%" alt="BrayanRK" /><br />
+<b>BrayanRK</b>
+</a>
+<br />
+<sub>@BrayanRK</sub>
+</td>
+</tr>
+</table>
+
+> Desarrollado y mantenido por **Duan** ([@Edward-oficial](https://github.com/Edward-oficial)) y **BrayanRK** ([@BrayanRK](https://github.com/BrayanRK))
+
+---
+
+## 〄 Características
+
+> - Arquitectura de plugins con carga automática
+> - Sistema de economía y niveles (RPG)
+> - Moderación de grupos (antilink, bienvenida, warn, ban)
+> - Soporte para sub-bots
+> - Comandos de inteligencia artificial
+> - Descargas multiplataforma (YouTube, TikTok, Instagram, Facebook, Pinterest, Spotify)
+
+---
+
+## ꕥ Instalación
 
 ```bash
-git clone https://github.com/Edward-oficial/Michi-WaBot.git
-cd Michi-WaBot
+git clone https://github.com/Edward-oficial/Rin-Tohsaka.git
+cd Rin-Tohsaka
 npm install
-npm start
+node index.js
 ```
 
-⟩ Este bot no tendra compatibilidad con termux ni cloudshell, por lo tanto pronto tendra su web donde podran conectarse.
+> Requiere Node.js 18 o superior
 
 ---
 
-「✦」Dependencias principales
+## ꕥ Licencia
 
-- **baileysxz**: `github:Edward-oficial/baileysxz`
-
----
-
-「✦」Contribuciones
-
-> ✐ ¡Pull requests y sugerencias son bienvenidas!  
-> ✰ ¡Tu ayuda hace crecer a Michi-WaBot!
+> Este proyecto se distribuye bajo los términos indicados en el archivo `LICENSE` del repositorio.
 
 ---
 
-「✦」Créditos
+<div align="center">
 
-> ✐ Creado por [Duan](https://github.com/Edward-oficial)  
-> ✐ Basado en Michi-WaMD
+*✎ _Duan and BrayanRK_*
+
+</div>
