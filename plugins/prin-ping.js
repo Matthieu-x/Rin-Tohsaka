@@ -54,6 +54,5 @@ const handler = async (m, { conn }) => {
 handler.help = ['ping']
 handler.tags = ['main']
 handler.command = ['ping', 'p', 'pong']
-handler.register = true
 
 export default handler
