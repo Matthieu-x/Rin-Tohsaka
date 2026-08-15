@@ -179,7 +179,7 @@ const ordenarTagsDisponibles = (agrupado) => {
 const handler = async (m, { conn, usedPrefix }) => {
   const inicio = performance.now()
 
-  const nombreBot = global.nombrebot || 'Rik-Tohska'
+  const nombreBot = global.nombrebot || 'Rin-Tohska'
   const creador = global.creador || 'Duan and BrayanRK'
   const modo = global.modoPublico ? 'Publico' : 'Privado'
   const version = global.versionBot || '1.0.0'
