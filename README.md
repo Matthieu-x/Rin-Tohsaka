@@ -61,7 +61,7 @@ npm install
 node index.js
 ```
 
-> Requiere Node.js 18 o superior
+> Requiere Node.js 20 o superior
 
 ---
 
