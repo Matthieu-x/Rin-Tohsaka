@@ -30,14 +30,8 @@ const formatBytes = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-const obtenerSaludo = () => {
-  const hora = Number(moment.tz('America/Santiago').format('HH'))
-  if (hora >= 5 && hora < 12) return 'Buenos dias'
-  if (hora >= 12 && hora < 19) return 'Buenas tardes'
-  return 'Buenas noches'
-}
-
-const capitalizar = (texto) => texto.charAt(0).toUpperCase() + texto.slice(1)
+const capitalizar = (texto) =>
+  texto.charAt(0).toUpperCase() + texto.slice(1)
 
 const ordenTags = [
   'main',
@@ -75,7 +69,9 @@ const nombreTags = {
 
 const obtenerAliasesComando = (plugin) => {
   if (!plugin.command) return []
+
   let lista = []
+
   if (Array.isArray(plugin.command)) {
     lista = plugin.command
   } else if (plugin.command instanceof RegExp) {
@@ -83,6 +79,7 @@ const obtenerAliasesComando = (plugin) => {
   } else {
     lista = [plugin.command]
   }
+
   return lista.filter((c) => typeof c === 'string')
 }
 
@@ -90,107 +87,178 @@ const obtenerDescripcionComando = (plugin) => {
   if (plugin.description && typeof plugin.description === 'string') {
     return plugin.description
   }
+
   if (plugin.desc && typeof plugin.desc === 'string') {
     return plugin.desc
   }
-  if (Array.isArray(plugin.help) && plugin.help.length > 0) {
-    const texto = plugin.help[0]
-    return typeof texto === 'string' ? texto : ''
-  }
-  if (typeof plugin.help === 'string') {
-    return plugin.help
-  }
+
   return ''
 }
 
 const construirBloqueCategoria = (tag, plugins, usedPrefix) => {
   const nombreVisible = nombreTags[tag] || capitalizar(tag)
+
   let bloque = `\n╭─❑ ${nombreVisible.toUpperCase()} ❑\n`
+
   for (const plugin of plugins) {
     const aliases = obtenerAliasesComando(plugin)
+
     if (aliases.length === 0) continue
-    const aliasesVisibles = aliases.slice(0, 2)
-    const linea = `│ ${usedPrefix}${aliasesVisibles.join(' , ' + usedPrefix)}`
-    bloque += linea + '\n'
+
+    const aliasesVisibles = aliases.slice(0, 3)
+
+    const linea = aliasesVisibles
+      .map(alias => `${usedPrefix}${alias}`)
+      .join(' , ')
+
+    bloque += `│ ${linea}\n`
+
     const descripcion = obtenerDescripcionComando(plugin)
+
     if (descripcion) {
-      bloque += `│ > ${descripcion}\n`
+      bloque += `> ${descripcion}\n`
     }
   }
+
   bloque += `╰────────────────\n`
+
   return bloque
 }
 
 const agruparPluginsPorTag = (plugins, esOwner) => {
   const agrupado = {}
+
   for (const key in plugins) {
     const plugin = plugins[key]
+
     if (!plugin || plugin.disabled) continue
-    if (!plugin.command && !(plugin.customPrefix)) continue
+    if (!plugin.command && !plugin.customPrefix) continue
     if (plugin.owner && !esOwner) continue
     if (plugin.rowner && !esOwner) continue
+
     let tags = plugin.tags || plugin.tag || ['sin-categoria']
-    if (!Array.isArray(tags)) tags = [tags]
+
+    if (!Array.isArray(tags)) {
+      tags = [tags]
+    }
+
     for (const tag of tags) {
       const tagNormalizado = String(tag).toLowerCase()
-      if (!agrupado[tagNormalizado]) agrupado[tagNormalizado] = []
+
+      if (!agrupado[tagNormalizado]) {
+        agrupado[tagNormalizado] = []
+      }
+
       agrupado[tagNormalizado].push(plugin)
     }
   }
+
   return agrupado
 }
 
 const ordenarTagsDisponibles = (agrupado) => {
   const claves = Object.keys(agrupado)
+
   claves.sort((a, b) => {
     const indexA = ordenTags.indexOf(a)
     const indexB = ordenTags.indexOf(b)
+
     const valorA = indexA === -1 ? 999 : indexA
     const valorB = indexB === -1 ? 999 : indexB
-    if (valorA === valorB) return a.localeCompare(b)
+
+    if (valorA === valorB) {
+      return a.localeCompare(b)
+    }
+
     return valorA - valorB
   })
+
   return claves
 }
 
-const handler = async (m, { conn, usedPrefix, participants }) => {
+const handler = async (m, { conn, usedPrefix }) => {
   const inicio = performance.now()
 
   const nombreBot = global.nombrebot || 'Rik-Tohska'
   const creador = global.creador || 'Duan and BrayanRK'
   const modo = global.modoPublico ? 'Publico' : 'Privado'
   const version = global.versionBot || '1.0.0'
-  const esOwner = global.owner && Array.isArray(global.owner)
-    ? global.owner.some((o) => Array.isArray(o) && o[0] === m.sender.split('@')[0])
-    : false
 
-  const totalUsuarios = global.db && global.db.data && global.db.data.users
-    ? Object.keys(global.db.data.users).length
-    : 0
-  const totalGrupos = global.db && global.db.data && global.db.data.chats
-    ? Object.keys(global.db.data.chats).length
-    : 0
-  const totalPremium = global.db && global.db.data && global.db.data.users
-    ? Object.values(global.db.data.users).filter((u) => u && u.premium).length
-    : 0
+  const esOwner =
+    global.owner &&
+    Array.isArray(global.owner)
+      ? global.owner.some(
+          (o) =>
+            Array.isArray(o) &&
+            o[0] === m.sender.split('@')[0]
+        )
+      : false
+
+  const totalUsuarios =
+    global.db &&
+    global.db.data &&
+    global.db.data.users
+      ? Object.keys(global.db.data.users).length
+      : 0
+
+  const totalGrupos =
+    global.db &&
+    global.db.data &&
+    global.db.data.chats
+      ? Object.keys(global.db.data.chats).length
+      : 0
+
+  const totalPremium =
+    global.db &&
+    global.db.data &&
+    global.db.data.users
+      ? Object.values(global.db.data.users).filter(
+          (u) => u && u.premium
+        ).length
+      : 0
 
   const uptimeTexto = runtime(process.uptime())
-  const fecha = moment.tz('America/Santiago').format('DD/MM/YYYY')
-  const hora = moment.tz('America/Santiago').format('HH:mm:ss')
-  const dia = capitalizar(moment.tz('America/Santiago').locale('es').format('dddd'))
+
+  const fecha = moment
+    .tz('America/Santiago')
+    .format('DD/MM/YYYY')
+
+  const hora = moment
+    .tz('America/Santiago')
+    .format('HH:mm:ss')
+
+  const dia = capitalizar(
+    moment
+      .tz('America/Santiago')
+      .locale('es')
+      .format('dddd')
+  )
 
   const memoriaTotal = os.totalmem()
   const memoriaLibre = os.freemem()
   const memoriaUsada = memoriaTotal - memoriaLibre
-  const plataforma = `${os.type()} ${os.release()} (${os.arch()})`
-  const nucleos = os.cpus() ? os.cpus().length : 0
 
-  const totalPlugins = global.plugins ? Object.keys(global.plugins).length : 0
-  const agrupado = global.plugins ? agruparPluginsPorTag(global.plugins, esOwner) : {}
-  const tagsDisponibles = ordenarTagsDisponibles(agrupado)
+  const plataforma = `${os.type()} ${os.release()} (${os.arch()})`
+
+  const nucleos = os.cpus()
+    ? os.cpus().length
+    : 0
+
+  const totalPlugins = global.plugins
+    ? Object.keys(global.plugins).length
+    : 0
+
+  const agrupado = global.plugins
+    ? agruparPluginsPorTag(global.plugins, esOwner)
+    : {}
+
+  const tagsDisponibles =
+    ordenarTagsDisponibles(agrupado)
 
   const mention = '@' + m.sender.split('@')[0]
-  const saludoMencion = `> Hola *${mention}* soy *${nombreBot}*, tu asistente virtual\n\n`
+
+  const saludoMencion =
+    `> Hola *${mention}* soy *${nombreBot}*, tu asistente virtual\n\n`
 
   let encabezado = `┏━❑ ${nombreBot} ❑━┓\n`
   encabezado += `┃ Dia       : ${dia}\n`
@@ -210,32 +278,61 @@ const handler = async (m, { conn, usedPrefix, participants }) => {
   encabezado += `┗━━━━━━━━━━━━━━┛\n`
 
   let cuerpo = ''
+
   for (const tag of tagsDisponibles) {
     if (tag === 'sin-categoria') continue
-    const pluginsDelTag = agrupado[tag].sort((a, b) => {
-      const nombreA = obtenerAliasesComando(a)[0] || ''
-      const nombreB = obtenerAliasesComando(b)[0] || ''
-      return nombreA.localeCompare(nombreB)
-    })
-    cuerpo += construirBloqueCategoria(tag, pluginsDelTag, usedPrefix)
+
+    const pluginsDelTag = agrupado[tag].sort(
+      (a, b) => {
+        const nombreA =
+          obtenerAliasesComando(a)[0] || ''
+
+        const nombreB =
+          obtenerAliasesComando(b)[0] || ''
+
+        return nombreA.localeCompare(nombreB)
+      }
+    )
+
+    cuerpo += construirBloqueCategoria(
+      tag,
+      pluginsDelTag,
+      usedPrefix
+    )
   }
 
   if (agrupado['sin-categoria']) {
-    cuerpo += construirBloqueCategoria('sin-categoria', agrupado['sin-categoria'], usedPrefix)
+    cuerpo += construirBloqueCategoria(
+      'sin-categoria',
+      agrupado['sin-categoria'],
+      usedPrefix
+    )
   }
 
   const fin = performance.now()
-  const tiempoRespuesta = ((fin - inicio) / 1000).toFixed(3)
 
-  let piePagina = `\n> Usa ${usedPrefix}help <comando> para ver informacion detallada de un comando especifico\n`
-  piePagina += `> Tiempo de generacion: ${tiempoRespuesta} s`
+  const tiempoRespuesta =
+    ((fin - inicio) / 1000).toFixed(3)
 
-  const textoFinal = saludoMencion + encabezado + cuerpo + piePagina
+  let piePagina =
+    `\n> Usa ${usedPrefix}help <comando> para ver informacion detallada de un comando especifico\n`
+
+  piePagina +=
+    `> Tiempo de generacion: ${tiempoRespuesta} s`
+
+  const textoFinal =
+    saludoMencion +
+    encabezado +
+    cuerpo +
+    piePagina
 
   let mediaBuffer = null
+
   try {
     if (fs.existsSync(RUTA_FOTO_MENU)) {
-      mediaBuffer = fs.readFileSync(RUTA_FOTO_MENU)
+      mediaBuffer = fs.readFileSync(
+        RUTA_FOTO_MENU
+      )
     }
   } catch (e) {
     mediaBuffer = null
@@ -253,13 +350,20 @@ const handler = async (m, { conn, usedPrefix, participants }) => {
           isForwarded: true
         }
       },
-      { quoted: m }
+      {
+        quoted: m
+      }
     )
   } else {
     await conn.sendMessage(
       m.chat,
-      { text: textoFinal, mentions: [m.sender] },
-      { quoted: m }
+      {
+        text: textoFinal,
+        mentions: [m.sender]
+      },
+      {
+        quoted: m
+      }
     )
   }
 }
