@@ -47,7 +47,7 @@ const handler = async (m, { conn, text, participants, groupMetadata, isAdmin, is
 
 handler.help = ['tagall <mensaje>']
 handler.tags = ['group']
-handler.command = ['tagall', 'everyone']
+handler.command = ['tagall', 'everyone', 'invocar']
 handler.description = 'Menciona a todos los miembros listandolos uno por uno'
 handler.group = true
 
