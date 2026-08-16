@@ -9,7 +9,7 @@ global.owner = [
   // ZONA DE JIDS
   ["584223342535", "Duan </>", true],
   ["", "BrayanRK", true],
-  ["", "", true],
+  ["584241819270", "ㄥ‌乇‌ㄖ♌🖤", true],
 
   // ZONA DE LIDS
   ["77623648624677", "Duan Edward", true],
