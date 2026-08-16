@@ -7,13 +7,16 @@ const formatearFecha = (timestamp) => {
   return fecha.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+const NUMERO_VENTAS = '584223342535'
+
 const handler = async (m, { conn, text, usedPrefix }) => {
   if (!text) {
-    await conn.reply(
-      m.chat,
-      `${SIMBOLO} *Falta el codigo*\n\n> Ejemplo: *${usedPrefix}redeem ABCD-EFGH-1234*`,
-      m
-    )
+    let texto = `${SIMBOLO} *Sub-bot premium*\n\n`
+    texto += `> Si ya tienes un codigo, canjealo asi:\n`
+    texto += `> *${usedPrefix}redeem ABCD-EFGH-1234*\n\n`
+    texto += `> ¿No tienes codigo? Puedes comprarlo por *$0.50*\n`
+    texto += `> Contacta: https://wa.me/${NUMERO_VENTAS}`
+    await conn.reply(m.chat, texto, m)
     return
   }
 
@@ -26,7 +29,7 @@ const handler = async (m, { conn, text, usedPrefix }) => {
     }
     await conn.reply(
       m.chat,
-      `${SIMBOLO} *No se pudo activar*\n\n> ${mensajes[resultado.motivo] || 'Error desconocido'}`,
+      `${SIMBOLO} *No se pudo activar*\n\n> ${mensajes[resultado.motivo] || 'Error desconocido'}\n\n> ¿No tienes codigo? Puedes comprarlo por *$0.50*\n> Contacta: https://wa.me/${NUMERO_VENTAS}`,
       m
     )
     return
