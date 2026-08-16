@@ -64,7 +64,7 @@ const handler = async (m, { conn, usedPrefix }) => {
   let texto = `${SIMBOLO} *Subbots activos*\n\n`
 
   listaConDatos.forEach((sub, i) => {
-    const estado = sub.conectado ? 'Conectado ✅' : 'Conectando ⏳'
+    const estado = sub.conectado ? 'Conectado' : 'Conectando'
     const tiempoActivo = sub.creadoEn ? runtime((Date.now() - sub.creadoEn) / 1000) : 'Desconocido'
 
     texto += `╭─❑ SUBBOT ${i + 1} ❑\n`
