@@ -25,9 +25,10 @@ const handler = async (m, { conn, text, usedPrefix }) => {
   await conn.reply(m.chat, texto, m)
 }
 
-handler.help = ['gentoken <dias>']
+handler.help = ['gentoken']
 handler.tags = ['owner']
-handler.command = ['gentoken', 'crearpremium']
+handler.command = ['gentoken', 'crearpremium', premium']
 handler.rowner = true
+handler.description = 'Crear código premium 
 
 export default handler
