@@ -1,7 +1,17 @@
 const SIMBOLO = 'ꕥ'
 
-const handler = async (m, { conn, isAdmin, isOwner }) => {
+function resolverJid(raw, participants) {
+  if (!raw) return raw
+  if (raw.endsWith('@lid')) {
+    const match = participants?.find((p) => p.lid === raw)
+    if (match?.id) return match.id
+  }
+  return raw
+}
+
+const handler = async (m, { conn, participants, isAdmin, isOwner }) => {
   if (!isAdmin && !isOwner) {
+    await m.react('✖️')
     await conn.reply(
       m.chat,
       `${SIMBOLO} *Solo los administradores del grupo pueden usar este comando*`,
@@ -11,9 +21,8 @@ const handler = async (m, { conn, isAdmin, isOwner }) => {
   }
 
   const menciones = (await m.mentionedJid) || []
-  const objetivo = m.quoted
-    ? m.quoted.sender
-    : menciones[0]
+  const crudo = m.quoted ? m.quoted.sender : menciones[0]
+  const objetivo = resolverJid(crudo, participants)
 
   if (!objetivo) {
     await conn.reply(
@@ -37,7 +46,10 @@ const handler = async (m, { conn, isAdmin, isOwner }) => {
       },
       { quoted: m }
     )
+
+    await m.react('✔️')
   } catch (error) {
+    await m.react('✖️')
     await conn.reply(
       m.chat,
       `${SIMBOLO} *No se pudo expulsar*\n\n> ${error.message}`,
