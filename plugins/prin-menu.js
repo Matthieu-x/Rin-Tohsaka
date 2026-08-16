@@ -3,7 +3,6 @@ import os from 'os'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { performance } from 'perf_hooks'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -11,14 +10,24 @@ const RUTA_FOTO_MENU = path.join(__dirname, '../media/rin.jpeg')
 
 const runtime = (segundos) => {
   segundos = Number(segundos)
+
   const d = Math.floor(segundos / (3600 * 24))
   const h = Math.floor((segundos % (3600 * 24)) / 3600)
   const m = Math.floor((segundos % 3600) / 60)
   const s = Math.floor(segundos % 60)
-  const dDisplay = d > 0 ? d + (d === 1 ? ' dia, ' : ' dias, ') : ''
-  const hDisplay = h > 0 ? h + (h === 1 ? ' hora, ' : ' horas, ') : ''
-  const mDisplay = m > 0 ? m + (m === 1 ? ' minuto, ' : ' minutos, ') : ''
-  const sDisplay = s > 0 ? s + (s === 1 ? ' segundo' : ' segundos') : ''
+
+  const dDisplay =
+    d > 0 ? d + (d === 1 ? ' dia, ' : ' dias, ') : ''
+
+  const hDisplay =
+    h > 0 ? h + (h === 1 ? ' hora, ' : ' horas, ') : ''
+
+  const mDisplay =
+    m > 0 ? m + (m === 1 ? ' minuto, ' : ' minutos, ') : ''
+
+  const sDisplay =
+    s > 0 ? s + (s === 1 ? ' segundo' : ' segundos') : ''
+
   return dDisplay + hDisplay + mDisplay + sDisplay
 }
 
@@ -72,40 +81,60 @@ const obtenerAliasesComando = (plugin) => {
     lista = [plugin.command]
   }
 
-  return lista.filter((c) => typeof c === 'string')
+  return lista.filter(
+    (c) => typeof c === 'string'
+  )
 }
 
 const obtenerDescripcionComando = (plugin) => {
-  if (plugin.description && typeof plugin.description === 'string') {
+  if (
+    plugin.description &&
+    typeof plugin.description === 'string'
+  ) {
     return plugin.description
   }
 
-  if (plugin.desc && typeof plugin.desc === 'string') {
+  if (
+    plugin.desc &&
+    typeof plugin.desc === 'string'
+  ) {
     return plugin.desc
   }
 
   return ''
 }
 
-const construirBloqueCategoria = (tag, plugins, usedPrefix) => {
-  const nombreVisible = nombreTags[tag] || capitalizar(tag)
+const construirBloqueCategoria = (
+  tag,
+  plugins,
+  usedPrefix
+) => {
+  const nombreVisible =
+    nombreTags[tag] || capitalizar(tag)
 
-  let bloque = `\n╭─❑ ${nombreVisible.toUpperCase()} ❑\n`
+  let bloque =
+    `\n╭─❑ ${nombreVisible.toUpperCase()} ❑\n`
 
   for (const plugin of plugins) {
-    const aliases = obtenerAliasesComando(plugin)
+    const aliases =
+      obtenerAliasesComando(plugin)
 
     if (aliases.length === 0) continue
 
-    const aliasesVisibles = aliases.slice(0, 3)
+    const aliasesVisibles =
+      aliases.slice(0, 3)
 
     const linea = aliasesVisibles
-      .map(alias => `${usedPrefix}${alias}`)
+      .map(
+        (alias) =>
+          `${usedPrefix}${alias}`
+      )
       .join(' , ')
 
     bloque += `│ ${linea}\n`
 
-    const descripcion = obtenerDescripcionComando(plugin)
+    const descripcion =
+      obtenerDescripcionComando(plugin)
 
     if (descripcion) {
       bloque += `> ${descripcion}\n`
@@ -117,46 +146,74 @@ const construirBloqueCategoria = (tag, plugins, usedPrefix) => {
   return bloque
 }
 
-const agruparPluginsPorTag = (plugins, esOwner) => {
+const agruparPluginsPorTag = (
+  plugins,
+  esOwner
+) => {
   const agrupado = {}
 
   for (const key in plugins) {
     const plugin = plugins[key]
 
-    if (!plugin || plugin.disabled) continue
-    if (!plugin.command && !plugin.customPrefix) continue
-    if (plugin.owner && !esOwner) continue
-    if (plugin.rowner && !esOwner) continue
+    if (!plugin || plugin.disabled)
+      continue
 
-    let tags = plugin.tags || plugin.tag || ['sin-categoria']
+    if (
+      !plugin.command &&
+      !plugin.customPrefix
+    ) {
+      continue
+    }
+
+    if (plugin.owner && !esOwner)
+      continue
+
+    if (plugin.rowner && !esOwner)
+      continue
+
+    let tags =
+      plugin.tags ||
+      plugin.tag ||
+      ['sin-categoria']
 
     if (!Array.isArray(tags)) {
       tags = [tags]
     }
 
     for (const tag of tags) {
-      const tagNormalizado = String(tag).toLowerCase()
+      const tagNormalizado =
+        String(tag).toLowerCase()
 
       if (!agrupado[tagNormalizado]) {
         agrupado[tagNormalizado] = []
       }
 
-      agrupado[tagNormalizado].push(plugin)
+      agrupado[tagNormalizado].push(
+        plugin
+      )
     }
   }
 
   return agrupado
 }
 
-const ordenarTagsDisponibles = (agrupado) => {
+const ordenarTagsDisponibles = (
+  agrupado
+) => {
   const claves = Object.keys(agrupado)
 
   claves.sort((a, b) => {
-    const indexA = ordenTags.indexOf(a)
-    const indexB = ordenTags.indexOf(b)
+    const indexA =
+      ordenTags.indexOf(a)
 
-    const valorA = indexA === -1 ? 999 : indexA
-    const valorB = indexB === -1 ? 999 : indexB
+    const indexB =
+      ordenTags.indexOf(b)
+
+    const valorA =
+      indexA === -1 ? 999 : indexA
+
+    const valorB =
+      indexB === -1 ? 999 : indexB
 
     if (valorA === valorB) {
       return a.localeCompare(b)
@@ -168,13 +225,22 @@ const ordenarTagsDisponibles = (agrupado) => {
   return claves
 }
 
-const handler = async (m, { conn, usedPrefix }) => {
-  const inicio = performance.now()
+const handler = async (
+  m,
+  { conn, usedPrefix }
+) => {
+  const nombreBot =
+    global.nombrebot ||
+    'Rin-Tohska'
 
-  const nombreBot = global.nombrebot || 'Rin-Tohska'
-  const creador = global.creador || 'Duan and BrayanRK'
-  const modo = global.modoPublico ? 'Publico' : 'Privado'
-  const version = global.versionBot || '1.0.0'
+  const modo =
+    global.modoPublico
+      ? 'Publico'
+      : 'Privado'
+
+  const version =
+    global.versionBot ||
+    '1.0.0'
 
   const esOwner =
     global.owner &&
@@ -182,110 +248,161 @@ const handler = async (m, { conn, usedPrefix }) => {
       ? global.owner.some(
           (o) =>
             Array.isArray(o) &&
-            o[0] === m.sender.split('@')[0]
+            o[0] ===
+              m.sender.split('@')[0]
         )
       : false
-
-  const totalUsuarios =
-    global.db &&
-    global.db.data &&
-    global.db.data.users
-      ? Object.keys(global.db.data.users).length
-      : 0
 
   const totalGrupos =
     global.db &&
     global.db.data &&
     global.db.data.chats
-      ? Object.keys(global.db.data.chats).length
+      ? Object.keys(
+          global.db.data.chats
+        ).length
       : 0
 
   const totalPremium =
     global.db &&
     global.db.data &&
     global.db.data.users
-      ? Object.values(global.db.data.users).filter(
+      ? Object.values(
+          global.db.data.users
+        ).filter(
           (u) => u && u.premium
         ).length
       : 0
 
-  const uptimeTexto = runtime(process.uptime())
+  const uptimeTexto =
+    runtime(process.uptime())
 
-  const fecha = moment
-    .tz('America/Santiago')
-    .format('DD/MM/YYYY')
-
-  const hora = moment
-    .tz('America/Santiago')
-    .format('HH:mm:ss')
-
-  const dia = capitalizar(
+  const fecha =
     moment
       .tz('America/Santiago')
-      .locale('es')
-      .format('dddd')
-  )
+      .format('DD/MM/YYYY')
 
-  const totalPlugins = global.plugins
-    ? Object.keys(global.plugins).length
-    : 0
+  const hora =
+    moment
+      .tz('America/Santiago')
+      .format('HH:mm:ss')
 
-  const agrupado = global.plugins
-    ? agruparPluginsPorTag(global.plugins, esOwner)
-    : {}
+  const dia =
+    capitalizar(
+      moment
+        .tz('America/Santiago')
+        .locale('es')
+        .format('dddd')
+    )
+
+  const totalPlugins =
+    global.plugins
+      ? Object.keys(
+          global.plugins
+        ).length
+      : 0
+
+  const agrupado =
+    global.plugins
+      ? agruparPluginsPorTag(
+          global.plugins,
+          esOwner
+        )
+      : {}
 
   const tagsDisponibles =
-    ordenarTagsDisponibles(agrupado)
+    ordenarTagsDisponibles(
+      agrupado
+    )
 
-  const mention = '@' + m.sender.split('@')[0]
+  const mention =
+    '@' +
+    m.sender.split('@')[0]
 
   const saludoMencion =
     `> Hola *${mention}* soy *${nombreBot}*, tu asistente virtual\n\n`
 
-  let encabezado = `┏━❑ ${nombreBot} ❑━┓\n`
-  encabezado += `┃ *Dia*       : _${dia}_\n`
-  encabezado += `┃ *Creador*   : _${creador}_\n`
-  encabezado += `┃ *Estado*    : _${modo}_\n`
-  encabezado += `┃ *Version*   : _${version}_\n`
-  encabezado += `┃ *Uptime*    : _${uptimeTexto}_\n`
-  encabezado += `┃ *Fecha*     : _${fecha}_\n`
-  encabezado += `┃ *Hora*      : _${hora}_\n`
-  encabezado += `┃ *Usuarios*  : _${totalUsuarios}_\n`
-  encabezado += `┃ *Grupos*    : _${totalGrupos}_\n`
-  encabezado += `┃ *Premium*   : _${totalPremium}_\n`
-  encabezado += `┃ *Comandos*  : _${totalPlugins}_\n`
-  encabezado += `┗━━━━━━━━━━━━━━┛\n`
+  let encabezado =
+    `┏━❑ ${nombreBot} ❑━┓\n`
+
+  encabezado +=
+    `┃ *Dia*       : _${dia}_\n`
+
+  encabezado +=
+    `┃ *Estado*    : _${modo}_\n`
+
+  encabezado +=
+    `┃ *Version*   : _${version}_\n`
+
+  encabezado +=
+    `┃ *Uptime*    : _${uptimeTexto}_\n`
+
+  encabezado +=
+    `┃ *Fecha*     : _${fecha}_\n`
+
+  encabezado +=
+    `┃ *Hora*      : _${hora}_\n`
+
+  encabezado +=
+    `┃ *Grupos*    : _${totalGrupos}_\n`
+
+  encabezado +=
+    `┃ *Premium*   : _${totalPremium}_\n`
+
+  encabezado +=
+    `┃ *Comandos*  : _${totalPlugins}_\n`
+
+  encabezado +=
+    `┗━━━━━━━━━━━━━━┛\n`
 
   let cuerpo = ''
 
-  for (const tag of tagsDisponibles) {
-    if (tag === 'sin-categoria') continue
+  for (
+    const tag of tagsDisponibles
+  ) {
+    if (
+      tag === 'sin-categoria'
+    ) {
+      continue
+    }
 
-    const pluginsDelTag = agrupado[tag].sort(
-      (a, b) => {
-        const nombreA =
-          obtenerAliasesComando(a)[0] || ''
+    const pluginsDelTag =
+      agrupado[tag].sort(
+        (a, b) => {
+          const nombreA =
+            obtenerAliasesComando(
+              a
+            )[0] || ''
 
-        const nombreB =
-          obtenerAliasesComando(b)[0] || ''
+          const nombreB =
+            obtenerAliasesComando(
+              b
+            )[0] || ''
 
-        return nombreA.localeCompare(nombreB)
-      }
-    )
+          return nombreA.localeCompare(
+            nombreB
+          )
+        }
+      )
 
-    cuerpo += construirBloqueCategoria(
-      tag,
-      pluginsDelTag,
-      usedPrefix
-    )
+    cuerpo +=
+      construirBloqueCategoria(
+        tag,
+        pluginsDelTag,
+        usedPrefix
+      )
   }
 
-  if (agrupado['sin-categoria']) {
-    cuerpo += construirBloqueCategoria(
-      'sin-categoria',
-      agrupado['sin-categoria'],
-      usedPrefix
-    )
+  if (
+    agrupado['sin-categoria']
+  ) {
+    cuerpo +=
+      construirBloqueCategoria(
+        'sin-categoria',
+        agrupado[
+          'sin-categoria'
+        ],
+        usedPrefix
+      )
   }
 
   const textoFinal =
@@ -296,10 +413,15 @@ const handler = async (m, { conn, usedPrefix }) => {
   let mediaBuffer = null
 
   try {
-    if (fs.existsSync(RUTA_FOTO_MENU)) {
-      mediaBuffer = fs.readFileSync(
+    if (
+      fs.existsSync(
         RUTA_FOTO_MENU
       )
+    ) {
+      mediaBuffer =
+        fs.readFileSync(
+          RUTA_FOTO_MENU
+        )
     }
   } catch (e) {
     mediaBuffer = null
@@ -312,7 +434,9 @@ const handler = async (m, { conn, usedPrefix }) => {
         image: mediaBuffer,
         caption: textoFinal,
         contextInfo: {
-          mentionedJid: [m.sender],
+          mentionedJid: [
+            m.sender
+          ],
           forwardingScore: 999,
           isForwarded: true
         }
@@ -326,7 +450,9 @@ const handler = async (m, { conn, usedPrefix }) => {
       m.chat,
       {
         text: textoFinal,
-        mentions: [m.sender]
+        mentions: [
+          m.sender
+        ]
       },
       {
         quoted: m
@@ -337,7 +463,13 @@ const handler = async (m, { conn, usedPrefix }) => {
 
 handler.help = ['menu']
 handler.tags = ['main']
-handler.command = ['menu', 'help', 'ayuda']
-handler.description = 'Muestra el menú principal de la bot.'
+handler.command = [
+  'menu',
+  'help',
+  'ayuda'
+]
+
+handler.description =
+  'Muestra el menú principal de la bot.'
 
 export default handler
