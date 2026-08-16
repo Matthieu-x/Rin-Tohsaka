@@ -6,7 +6,6 @@ import pino from 'pino'
 import Pino from 'pino'
 import { Boom } from '@hapi/boom'
 import { makeWASocket } from '../lib/simple.js'
-import { handler } from '../handler.js'
 
 const {
   useMultiFileAuthState,
@@ -105,6 +104,9 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
 
   sub.ev.on('creds.update', saveCreds)
 
+  const { handler: handlerSubbot } = await import('../handler.js')
+  sub.ev.on('messages.upsert', handlerSubbot.bind(sub))
+
   sub.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect } = update
 
@@ -145,8 +147,6 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
       }
     }
   })
-
-  sub.ev.on('messages.upsert', handler.bind(sub))
 
   return sub
 }
