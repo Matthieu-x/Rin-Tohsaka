@@ -7,7 +7,7 @@ import chalk from "chalk";
 import fetch from "node-fetch";
 import ws from "ws";
 
-const { proto } = (await import("baileysxz")).default;
+const { proto } = (await import("baileys")).default;
 const isNumber = x => typeof x === "number" && !isNaN(x);
 const delay = ms => isNumber(ms) && new Promise(resolve => setTimeout(resolve, ms));
 
