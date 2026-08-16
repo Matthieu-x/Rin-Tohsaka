@@ -5,6 +5,7 @@ import chalk from 'chalk'
 import pino from 'pino'
 import Pino from 'pino'
 import { Boom } from '@hapi/boom'
+import NodeCache from 'node-cache'
 import { makeWASocket } from '../lib/simple.js'
 import { enviarAvisoCanal } from '../lib/canal.js'
 
@@ -72,6 +73,8 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
   const { state, saveCreds } = await useMultiFileAuthState(pathMichiJadiBot)
   const { version } = await fetchLatestBaileysVersion()
 
+  const cacheMetadataGruposSub = new NodeCache({ stdTTL: 5 * 60, checkperiod: 60 })
+
   const connectionOptionsSub = {
     logger: pino({ level: 'silent' }),
     printQRInTerminal: false,
@@ -83,12 +86,31 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
     markOnlineOnConnect: false,
     generateHighQualityLinkPreview: true,
     syncFullHistory: false,
+    cachedGroupMetadata: (jid) => cacheMetadataGruposSub.get(jid),
     version
   }
 
   const sub = makeWASocket(connectionOptionsSub)
   conexionesActivas.set(pathMichiJadiBot, sub)
   sub.isSubBot = true
+
+  const refrescarCacheGrupoSub = async (jid) => {
+    try {
+      const metadata = await sub.groupMetadata(jid)
+      cacheMetadataGruposSub.set(jid, metadata)
+    } catch (error) {}
+  }
+
+  sub.ev.on('groups.update', async (updates) => {
+    for (const update of updates) {
+      if (update.id) await refrescarCacheGrupoSub(update.id)
+    }
+  })
+
+  sub.ev.on('group-participants.update', async (event) => {
+    if (event.id) await refrescarCacheGrupoSub(event.id)
+  })
+
 
   let codigoPendienteNumero = null
   if (!sub.authState || !sub.authState.creds.registered) {
@@ -130,6 +152,12 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
     if (connection === 'open') {
       codigosSolicitados.delete(pathMichiJadiBot)
       const numero = jidNormalizedUser(sub.user.id).split('@')[0]
+
+      sub.groupFetchAllParticipating().then((grupos) => {
+        for (const jid of Object.keys(grupos)) {
+          cacheMetadataGruposSub.set(jid, grupos[jid])
+        }
+      }).catch(() => {})
 
       const rutaConfig = join(pathMichiJadiBot, 'config.json')
       const esSubbotNuevo = !existsSync(rutaConfig)
