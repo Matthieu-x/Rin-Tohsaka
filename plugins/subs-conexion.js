@@ -1,0 +1,152 @@
+import path, { join } from 'path'
+import fs, { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+import chalk from 'chalk'
+import pino from 'pino'
+import Pino from 'pino'
+import { Boom } from '@hapi/boom'
+import { makeWASocket } from '../lib/simple.js'
+import { handler } from '../handler.js'
+
+const {
+  useMultiFileAuthState,
+  makeCacheableSignalKeyStore,
+  fetchLatestBaileysVersion,
+  DisconnectReason,
+  jidNormalizedUser
+} = await import('baileysxz')
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const conexionesActivas = new Map()
+
+const obtenerLimiteSubbots = (esPremium) => (esPremium ? 5 : 1)
+
+const contarSubbotsDeUsuario = (senderNumber) => {
+  const base = join(process.cwd(), 'Sessions', 'SubBot')
+  if (!existsSync(base)) return 0
+  let cuenta = 0
+  for (const carpeta of readdirSync(base)) {
+    const configPath = join(base, carpeta, 'config.json')
+    if (!existsSync(configPath)) continue
+    try {
+      const config = JSON.parse(fs.readFileSync(configPath))
+      if (config.creadoPor === senderNumber) cuenta++
+    } catch (e) {}
+  }
+  return cuenta
+}
+
+const guardarConfigSubbot = (pathMichiJadiBot, datos) => {
+  writeFileSync(join(pathMichiJadiBot, 'config.json'), JSON.stringify(datos, null, 2))
+}
+
+export const puedeCrearSubbot = (senderNumber, esPremium) => {
+  const limite = obtenerLimiteSubbots(esPremium)
+  const actuales = contarSubbotsDeUsuario(senderNumber)
+  return { permitido: actuales < limite, actuales, limite }
+}
+
+export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix, command }) {
+  if (conexionesActivas.has(pathMichiJadiBot)) {
+    return
+  }
+
+  if (!existsSync(pathMichiJadiBot)) {
+    mkdirSync(pathMichiJadiBot, { recursive: true })
+  }
+
+  const { state, saveCreds } = await useMultiFileAuthState(pathMichiJadiBot)
+  const { version } = await fetchLatestBaileysVersion()
+
+  const connectionOptionsSub = {
+    logger: pino({ level: 'silent' }),
+    printQRInTerminal: false,
+    browser: ['Rin-Tohsaka', 'Chrome', '1.0.0'],
+    auth: {
+      creds: state.creds,
+      keys: makeCacheableSignalKeyStore(state.keys, Pino({ level: 'fatal' }).child({ level: 'fatal' }))
+    },
+    markOnlineOnConnect: false,
+    generateHighQualityLinkPreview: true,
+    syncFullHistory: false,
+    version
+  }
+
+  const sub = makeWASocket(connectionOptionsSub)
+  conexionesActivas.set(pathMichiJadiBot, sub)
+  sub.isSubBot = true
+
+  if (!sub.authState || !sub.authState.creds.registered) {
+    const numeroSolicitante = m?.sender ? m.sender.split('@')[0] : null
+    const numeroObjetivo = args && args.replace(/\D/g, '') ? args.replace(/\D/g, '') : numeroSolicitante
+
+    if (numeroObjetivo) {
+      setTimeout(async () => {
+        try {
+          let codigo = await sub.requestPairingCode(numeroObjetivo)
+          codigo = codigo?.match(/.{1,4}/g)?.join('-') || codigo
+
+          if (m && conn) {
+            await conn.reply(
+              m.chat,
+              `ꕥ *Codigo de vinculacion*\n\n> Codigo: *${codigo}*\n> Abre WhatsApp en el numero que quieres usar como subbot\n> Ve a Dispositivos vinculados > Vincular con numero de telefono\n> Ingresa este codigo dentro de los proximos 60 segundos`,
+              m
+            )
+          }
+        } catch (error) {
+          if (m && conn) {
+            await conn.reply(m.chat, `ꕥ *Error al generar el codigo*\n\n> ${error.message}`, m)
+          }
+          conexionesActivas.delete(pathMichiJadiBot)
+        }
+      }, 3000)
+    }
+  }
+
+  sub.ev.on('creds.update', saveCreds)
+
+  sub.ev.on('connection.update', async (update) => {
+    const { connection, lastDisconnect } = update
+
+    if (connection === 'open') {
+      const numero = jidNormalizedUser(sub.user.id).split('@')[0]
+      guardarConfigSubbot(pathMichiJadiBot, {
+        numero,
+        creadoPor: m?.sender ? m.sender.split('@')[0] : numero,
+        prefix: 'multi',
+        creadoEn: Date.now()
+      })
+
+      if (m && conn) {
+        await conn.reply(
+          m.chat,
+          `ꕥ *Subbot conectado*\n\n> Numero: ${numero}\n> Ya puedes usarlo como un bot independiente`,
+          m
+        )
+      }
+    }
+
+    if (connection === 'close') {
+      const codigoError = new Boom(lastDisconnect?.error)?.output?.statusCode
+      const cerroSesion = codigoError === DisconnectReason.loggedOut
+
+      conexionesActivas.delete(pathMichiJadiBot)
+
+      if (cerroSesion) {
+        if (existsSync(pathMichiJadiBot)) {
+          rmSync(pathMichiJadiBot, { recursive: true, force: true })
+        }
+        console.log(chalk.red(`[ ✿ ] Subbot cerro sesion, carpeta eliminada: ${pathMichiJadiBot}`))
+      } else {
+        console.log(chalk.yellow(`[ ✿ ] Subbot desconectado, reintentando: ${pathMichiJadiBot}`))
+        setTimeout(() => {
+          MichiJadiBot({ pathMichiJadiBot, m: null, conn, args: '', usedPrefix, command })
+        }, 5000)
+      }
+    }
+  })
+
+  sub.ev.on('messages.upsert', handler.bind(sub))
+
+  return sub
+}
