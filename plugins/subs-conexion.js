@@ -161,6 +161,8 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
         )
       }
 
+      console.log('[ i ] Subbot conectado:', numero, '| nuevo:', esSubbotNuevo, '| canal configurado:', Boolean(global.db?.data?.canalGlobal?.jid))
+
       if (esSubbotNuevo && global.db?.data?.canalGlobal?.jid) {
         await enviarAvisoCanal(
           `ꕥ *Nuevo subbot vinculado*\n\n> Numero: ${numero}\n> Creado por: ${m?.sender ? m.sender.split('@')[0] : numero}`
