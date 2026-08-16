@@ -48,7 +48,8 @@ const ordenTags = [
   'tools',
   'herramientas',
   'nsfw',
-  'owner'
+  'owner',
+  'serbot'
 ]
 
 const nombreTags = {
@@ -65,7 +66,8 @@ const nombreTags = {
   tools: 'Herramientas',
   herramientas: 'Herramientas',
   nsfw: 'NSFW',
-  owner: 'Owner'
+  owner: 'Owner',
+  serbot: 'Subbots'
 }
 
 const obtenerAliasesComando = (plugin) => {
