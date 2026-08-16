@@ -12,7 +12,7 @@ global.owner = [
   ["", "", true],
 
   // ZONA DE LIDS
-  ["7762364862467", "Duan Edward", true],
+  ["77623648624677", "Duan Edward", true],
   ["204148502954022", "BrayanRK", true],
   ["", "", true]
 ]
