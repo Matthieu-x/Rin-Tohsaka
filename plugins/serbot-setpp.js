@@ -1,3 +1,5 @@
+import { guardarFotoIdentidad } from '../lib/identidad.js'
+
 const SIMBOLO = 'ꕥ'
 
 const obtenerMensajeConImagen = (m) => {
@@ -29,6 +31,7 @@ const handler = async (m, { conn, usedPrefix }) => {
     }
 
     await conn.updateProfilePicture(conn.user.id, buffer)
+    guardarFotoIdentidad(conn, buffer)
 
     let texto = `${SIMBOLO} *Foto de perfil actualizada*\n\n`
     texto += `> Puede tardar unos segundos en reflejarse en WhatsApp`
