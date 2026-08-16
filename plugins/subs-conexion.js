@@ -41,6 +41,18 @@ const guardarConfigSubbot = (pathMichiJadiBot, datos) => {
   writeFileSync(join(pathMichiJadiBot, 'config.json'), JSON.stringify(datos, null, 2))
 }
 
+export const obtenerSubbotsActivos = () => {
+  const lista = []
+  for (const [pathMichiJadiBot, sub] of conexionesActivas.entries()) {
+    lista.push({
+      path: pathMichiJadiBot,
+      numero: sub?.user?.id ? jidNormalizedUser(sub.user.id).split('@')[0] : null,
+      conectado: Boolean(sub?.user?.id)
+    })
+  }
+  return lista
+}
+
 export const puedeCrearSubbot = (senderNumber, esPremium) => {
   const limite = obtenerLimiteSubbots(esPremium)
   const actuales = contarSubbotsDeUsuario(senderNumber)
