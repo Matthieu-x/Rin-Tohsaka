@@ -61,7 +61,7 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
   const connectionOptionsSub = {
     logger: pino({ level: 'silent' }),
     printQRInTerminal: false,
-    browser: ['MacOs', 'Safari'],
+    browser: ['Windows', 'Chrome', '110.0.5481.177'],
     auth: {
       creds: state.creds,
       keys: makeCacheableSignalKeyStore(state.keys, Pino({ level: 'fatal' }).child({ level: 'fatal' }))
