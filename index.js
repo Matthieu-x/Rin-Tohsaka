@@ -285,6 +285,7 @@ if (connection === "open") {
 const userJid = jidNormalizedUser(conn.user.id)
 const userName = conn.user.name || conn.user.verifiedName || "Desconocido"
 await joinChannels(conn)
+await asegurarCanalGlobal(conn)
 console.log(chalk.green.bold(`[ ✿ ]  Conectado a: ${userName}`))
 }
 let reason = new Boom(lastDisconnect?.error)?.output?.statusCode
@@ -538,3 +539,23 @@ for (const value of Object.values(global.ch)) {
 if (typeof value === 'string' && value.endsWith('@newsletter')) {
 await sock.newsletterFollow(value).catch(() => {})
 }}}
+
+async function asegurarCanalGlobal(sock) {
+try {
+if (global.db?.data?.canalGlobal?.jid) return
+if (!global.canalLink) return
+const match = global.canalLink.match(/whatsapp\.com\/channel\/([0-9A-Za-z]+)/i)
+if (!match) return
+const codigo = match[1]
+const metadata = await sock.newsletterMetadata('invite', codigo).catch(() => null)
+if (!metadata || !metadata.id) return
+if (global.db.data == null) return
+global.db.data.canalGlobal = {
+jid: metadata.id,
+nombre: metadata.name || 'Canal'
+}
+await sock.newsletterFollow(metadata.id).catch(() => {})
+console.log(chalk.green.bold(`[ ✿ ]  Canal global configurado: ${metadata.name || metadata.id}`))
+} catch (e) {
+console.error('Error configurando canal global:', e)
+}}
