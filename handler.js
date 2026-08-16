@@ -13,6 +13,10 @@ const delay = ms => isNumber(ms) && new Promise(resolve => setTimeout(resolve, m
 
 const prefixCache = new Map();
 
+export function actualizarPrefixCache(numero, prefixRegex) {
+    prefixCache.set(numero, prefixRegex);
+}
+
 export async function handler(chatUpdate) {
     this.msgqueque = this.msgqueque || [];
     this.uptime = this.uptime || Date.now();
