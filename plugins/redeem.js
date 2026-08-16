@@ -1,4 +1,5 @@
 import { redimirToken } from '../lib/premium-tokens.js'
+import { enviarAvisoCanal } from '../lib/canal.js'
 
 const SIMBOLO = 'ꕥ'
 
@@ -41,6 +42,12 @@ const handler = async (m, { conn, text, usedPrefix }) => {
   texto += `> Ahora tienes 300 descargas diarias en vez de 10`
 
   await conn.reply(m.chat, texto, m)
+
+  if (global.db?.data?.canalGlobal?.jid) {
+    await enviarAvisoCanal(
+      `${SIMBOLO} *Nuevo premium activado*\n\n> Numero: ${m.sender.split('@')[0]}\n> Duracion: ${resultado.diasDuracion} dias`
+    )
+  }
 }
 
 handler.help = ['redeem']
