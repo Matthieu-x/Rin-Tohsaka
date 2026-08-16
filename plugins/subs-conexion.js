@@ -134,11 +134,22 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
     if (connection === 'open') {
       codigosSolicitados.delete(pathMichiJadiBot)
       const numero = jidNormalizedUser(sub.user.id).split('@')[0]
+
+      const rutaConfig = join(pathMichiJadiBot, 'config.json')
+      const esSubbotNuevo = !existsSync(rutaConfig)
+
+      let configPrevio = null
+      if (!esSubbotNuevo) {
+        try {
+          configPrevio = JSON.parse(fs.readFileSync(rutaConfig))
+        } catch (e) {}
+      }
+
       guardarConfigSubbot(pathMichiJadiBot, {
         numero,
-        creadoPor: m?.sender ? m.sender.split('@')[0] : numero,
-        prefix: 'multi',
-        creadoEn: Date.now()
+        creadoPor: configPrevio?.creadoPor || (m?.sender ? m.sender.split('@')[0] : numero),
+        prefix: configPrevio?.prefix || 'multi',
+        creadoEn: configPrevio?.creadoEn || Date.now()
       })
 
       if (m && conn) {
@@ -147,6 +158,16 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
           `ꕥ *Subbot conectado*\n\n> Numero: ${numero}\n> Ya puedes usarlo como un bot independiente`,
           m
         )
+      }
+
+      if (esSubbotNuevo && conn && global.db?.data?.canalGlobal?.jid) {
+        try {
+          await conn.sendMessage(global.db.data.canalGlobal.jid, {
+            text: `ꕥ *Nuevo subbot vinculado*\n\n> Numero: ${numero}\n> Creado por: ${m?.sender ? m.sender.split('@')[0] : numero}`
+          })
+        } catch (e) {
+          console.error('Error enviando aviso de subbot al canal:', e)
+        }
       }
     }
 
