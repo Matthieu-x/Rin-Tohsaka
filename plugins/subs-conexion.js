@@ -15,7 +15,7 @@ const {
   fetchLatestBaileysVersion,
   DisconnectReason,
   jidNormalizedUser
-} = await import('baileysxz')
+} = await import('baileys')
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const conexionesActivas = new Map()
@@ -107,7 +107,7 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
     if (qr && codigoPendienteNumero && !codigosSolicitados.has(pathMichiJadiBot)) {
       codigosSolicitados.add(pathMichiJadiBot)
       try {
-        let codigo = await sub.requestPairingCode(codigoPendienteNumero)
+        let codigo = await sub.requestPairingCode(codigoPendienteNumero, 'RINTSUBB')
         codigo = codigo?.match(/.{1,4}/g)?.join('-') || codigo
 
         if (m && conn) {
