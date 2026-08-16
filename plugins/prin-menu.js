@@ -3,6 +3,10 @@ import os from 'os'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import {
+  obtenerNombreIdentidad,
+  obtenerRutaFotoIdentidad
+} from '../lib/identidad.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -49,7 +53,8 @@ const ordenTags = [
   'herramientas',
   'nsfw',
   'owner',
-  'serbot'
+  'serbot',
+  'personalizacion'
 ]
 
 const nombreTags = {
@@ -67,7 +72,8 @@ const nombreTags = {
   herramientas: 'Herramientas',
   nsfw: 'NSFW',
   owner: 'Owner',
-  serbot: 'Subbots'
+  serbot: 'Subbots',
+  personalizacion: 'Personalización'
 }
 
 const obtenerAliasesComando = (plugin) => {
@@ -231,17 +237,27 @@ const handler = async (
   m,
   { conn, usedPrefix }
 ) => {
+  const settingsConn =
+    (global.db &&
+      global.db.data &&
+      global.db.data.settings &&
+      conn.user &&
+      global.db.data.settings[conn.user.jid]) ||
+    {}
+
   const nombreBot =
-    global.nombrebot ||
+    obtenerNombreIdentidad(conn) ||
+    global.botname ||
     'Rin-Tohsaka'
 
   const modo =
-    global.modoPublico
-      ? 'Publico'
-      : 'Privado'
+    settingsConn.self
+      ? 'Privado'
+      : 'Publico'
 
   const version =
     global.versionBot ||
+    global.vs ||
     '1.1.1'
 
   const esOwner =
@@ -415,7 +431,15 @@ const handler = async (
   let mediaBuffer = null
 
   try {
-    if (
+    const rutaFotoPersonalizada =
+      obtenerRutaFotoIdentidad(conn)
+
+    if (rutaFotoPersonalizada) {
+      mediaBuffer =
+        fs.readFileSync(
+          rutaFotoPersonalizada
+        )
+    } else if (
       fs.existsSync(
         RUTA_FOTO_MENU
       )
