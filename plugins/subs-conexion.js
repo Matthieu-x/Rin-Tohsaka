@@ -20,7 +20,7 @@ const {
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const conexionesActivas = new Map()
 const codigosSolicitados = new Set()
-const CODIGO_PERSONALIZADO = 'RINTHOSA'
+//const CODIGO_PERSONALIZADO = 'RINTHOSA'
 
 const obtenerLimiteSubbots = (esPremium) => (esPremium ? 5 : 1)
 
