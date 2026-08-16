@@ -90,33 +90,10 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
   conexionesActivas.set(pathMichiJadiBot, sub)
   sub.isSubBot = true
 
+  let codigoPendienteNumero = null
   if (!sub.authState || !sub.authState.creds.registered) {
     const numeroSolicitante = m?.sender ? m.sender.split('@')[0] : null
-    const numeroObjetivo = args && args.replace(/\D/g, '') ? args.replace(/\D/g, '') : numeroSolicitante
-
-    if (numeroObjetivo && !codigosSolicitados.has(pathMichiJadiBot)) {
-      codigosSolicitados.add(pathMichiJadiBot)
-      setTimeout(async () => {
-        try {
-          let codigo = await sub.requestPairingCode(numeroObjetivo)
-          codigo = codigo?.match(/.{1,4}/g)?.join('-') || codigo
-
-          if (m && conn) {
-            await conn.reply(
-              m.chat,
-              `ꕥ *Codigo de vinculacion*\n\n> Codigo: *${codigo}*\n> Abre WhatsApp en el numero que quieres usar como subbot\n> Ve a Dispositivos vinculados > Vincular con numero de telefono\n> Ingresa este codigo dentro de los proximos 60 segundos\n\n> No pidas el codigo de nuevo mientras esperas, cada vez que se genera uno nuevo el anterior queda invalido`,
-              m
-            )
-          }
-        } catch (error) {
-          codigosSolicitados.delete(pathMichiJadiBot)
-          if (m && conn) {
-            await conn.reply(m.chat, `ꕥ *Error al generar el codigo*\n\n> ${error.message}`, m)
-          }
-          conexionesActivas.delete(pathMichiJadiBot)
-        }
-      }, 3000)
-    }
+    codigoPendienteNumero = args && args.replace(/\D/g, '') ? args.replace(/\D/g, '') : numeroSolicitante
   }
 
   sub.ev.on('creds.update', saveCreds)
@@ -125,7 +102,30 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
   sub.ev.on('messages.upsert', handlerSubbot.bind(sub))
 
   sub.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect } = update
+    const { connection, lastDisconnect, qr } = update
+
+    if (qr && codigoPendienteNumero && !codigosSolicitados.has(pathMichiJadiBot)) {
+      codigosSolicitados.add(pathMichiJadiBot)
+      try {
+        let codigo = await sub.requestPairingCode(codigoPendienteNumero)
+        codigo = codigo?.match(/.{1,4}/g)?.join('-') || codigo
+
+        if (m && conn) {
+          await conn.reply(
+            m.chat,
+            `ꕥ *Codigo de vinculacion*\n\n> Codigo: *${codigo}*\n> Abre WhatsApp en el numero que quieres usar como subbot\n> Ve a Dispositivos vinculados > Vincular con numero de telefono\n> Ingresa este codigo dentro de los proximos 60 segundos\n\n> No pidas el codigo de nuevo mientras esperas, cada vez que se genera uno nuevo el anterior queda invalido`,
+            m
+          )
+        }
+      } catch (error) {
+        codigosSolicitados.delete(pathMichiJadiBot)
+        if (m && conn) {
+          await conn.reply(m.chat, `ꕥ *Error al generar el codigo*\n\n> ${error.message}`, m)
+        }
+        conexionesActivas.delete(pathMichiJadiBot)
+        return
+      }
+    }
 
     if (connection === 'open') {
       codigosSolicitados.delete(pathMichiJadiBot)
