@@ -1,3 +1,5 @@
+import { guardarNombreIdentidad } from '../lib/identidad.js'
+
 const SIMBOLO = 'ꕥ'
 
 const handler = async (m, { conn, text, usedPrefix }) => {
@@ -14,6 +16,7 @@ const handler = async (m, { conn, text, usedPrefix }) => {
 
   try {
     await conn.updateProfileName(nuevoNombre)
+    guardarNombreIdentidad(conn, nuevoNombre)
 
     let texto = `${SIMBOLO} *Nombre actualizado*\n\n`
     texto += `> Nuevo nombre: *${nuevoNombre}*\n`
