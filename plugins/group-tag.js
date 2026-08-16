@@ -22,7 +22,7 @@ const handler = async (m, { conn, text, participants, isAdmin, isOwner }) => {
   if (!mensaje) {
     await conn.reply(
       m.chat,
-      `${SIMBOLO} *Falta el mensaje*\n\n> Ejemplo: ✐ → *.tag hola*`,
+      `${SIMBOLO} *Falta el mensaje*\n\n> Ejemplo: ✐ *.tag hola*`,
       m
     )
     return
