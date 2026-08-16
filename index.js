@@ -118,6 +118,8 @@ console.log(chalk.bold.redBright(`No se permiten numeros que no sean 1 o 2, tamp
 
 console.info = () => { }
 
+const cacheMetadataGrupos = new NodeCache({ stdTTL: 5 * 60, checkperiod: 60 })
+
 const connectionOptions = {
 logger: pino({ level: 'silent' }),
 printQRInTerminal: opcion == '1' ? true : methodCodeQR ? true : false,
@@ -141,13 +143,31 @@ return ""
 msgRetryCounterCache: msgRetryCounterCache || new Map(),
 userDevicesCache: userDevicesCache || new Map(),
 defaultQueryTimeoutMs: undefined,
-cachedGroupMetadata: (jid) => globalThis.conn.chats[jid] ?? {},
+cachedGroupMetadata: (jid) => cacheMetadataGrupos.get(jid),
 version: version, 
 keepAliveIntervalMs: 55000, 
 maxIdleTimeMs: 60000, 
 }
 
 global.conn = makeWASocket(connectionOptions)
+
+const refrescarCacheGrupo = async (jid) => {
+  try {
+    const metadata = await global.conn.groupMetadata(jid)
+    cacheMetadataGrupos.set(jid, metadata)
+  } catch (error) {}
+}
+
+global.conn.ev.on('groups.update', async (updates) => {
+  for (const update of updates) {
+    if (update.id) await refrescarCacheGrupo(update.id)
+  }
+})
+
+global.conn.ev.on('group-participants.update', async (event) => {
+  if (event.id) await refrescarCacheGrupo(event.id)
+})
+
 if (!fs.existsSync(`./${sessions}/creds.json`)) {
 if (opcion === '2' || methodCode) {
 opcion = '2'
@@ -286,6 +306,11 @@ const userJid = jidNormalizedUser(conn.user.id)
 const userName = conn.user.name || conn.user.verifiedName || "Desconocido"
 await asegurarCanalGlobal(conn)
 await joinChannels(conn)
+conn.groupFetchAllParticipating().then((grupos) => {
+for (const jid of Object.keys(grupos)) {
+cacheMetadataGrupos.set(jid, grupos[jid])
+}
+}).catch(() => {})
 console.log(chalk.green.bold(`[ ✿ ]  Conectado a: ${userName}`))
 }
 let reason = new Boom(lastDisconnect?.error)?.output?.statusCode
