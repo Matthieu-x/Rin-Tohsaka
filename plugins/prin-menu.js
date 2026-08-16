@@ -231,7 +231,7 @@ const handler = async (
 ) => {
   const nombreBot =
     global.nombrebot ||
-    'Rin-Tohska'
+    'Rin-Tohsaka'
 
   const modo =
     global.modoPublico
