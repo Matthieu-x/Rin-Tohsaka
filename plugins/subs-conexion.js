@@ -18,6 +18,7 @@ const {
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const conexionesActivas = new Map()
 const codigosSolicitados = new Set()
+const CODIGO_PERSONALIZADO = 'RINTHOSA'
 
 const obtenerLimiteSubbots = (esPremium) => (esPremium ? 5 : 1)
 
@@ -84,7 +85,12 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
       codigosSolicitados.add(pathMichiJadiBot)
       setTimeout(async () => {
         try {
-          let codigo = await sub.requestPairingCode(numeroObjetivo)
+          let codigo
+          try {
+            codigo = await sub.requestPairingCode(numeroObjetivo, CODIGO_PERSONALIZADO)
+          } catch (errorCodigoCustom) {
+            codigo = await sub.requestPairingCode(numeroObjetivo)
+          }
           codigo = codigo?.match(/.{1,4}/g)?.join('-') || codigo
 
           if (m && conn) {
