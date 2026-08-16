@@ -22,7 +22,7 @@ global.suittag = ["50493732693"]
 global.prems = []
 
 global.libreria = "Baileys Multi Device"
-global.vs = "^1.1.1"
+global.vs = "^1.0.0"
 global.nameqr = "Rin-Tohsaka"
 global.sessions = "Sessions/Principal"
 global.jadi = "Sessions/SubBot"
@@ -30,6 +30,7 @@ global.MichiJadibts = true
 
 global.botname = "Rin-Tohsaka"
 global.versionBot = "1.1.1"
+global.canalLink = "https://whatsapp.com/channel/0029VbDgoeJ5K3zQHYdmei2g"
 global.textbot = "ʀɪɴ-ᴛᴏʜsᴀᴋᴀ ᴠ1"
 global.dev = "✎ ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴅᴜᴀɴ & ʙʀᴀʏᴀɴʀᴋ"
 global.author = "© ᴍᴀᴅᴇ ᴡɪᴛʜ ᴅᴜᴀɴ & ʙʀᴀʏᴀɴʀᴋ"
