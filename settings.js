@@ -9,12 +9,12 @@ global.owner = [
   // ZONA DE JIDS
   ["584223342535", "Duan </>", true],
   ["", "BrayanRK", true],
-  ["584241819270", "ㄥ‌乇‌ㄖ♌🖤", true],
+  ["", "", true],
 
   // ZONA DE LIDS
   ["77623648624677", "Duan Edward", true],
   ["204148502954022", "BrayanRK", true],
-  ["81248517156968", "Leo", true]
+  ["", "", true]
 ]
 
 global.mods = []
@@ -43,11 +43,12 @@ global.catalogo = fs.readFileSync("./lib/catalogo.jpg")
 
 global.group = "https://chat.whatsapp.com/D80dadzwRq4LQqFGUntZfK?mode=ems_copy_t"
 global.community = ""
-global.channel = "https://whatsapp.com/channel/0029VbArz9fAO7RGy2915k3O"
+global.channel = "https://whatsapp.com/channel/0029VbDgoeJ5K3zQHYdmei2g"
 global.github = "https://github.com"
 global.gmail = "minexdt@gmail.com"
 
 global.ch = {
+  // Este ch1 se actualiza solo al conectar con tu canal real (ver asegurarCanalGlobal en index.js)
   ch1: "120363418111976564@newsletter"
 }
 
