@@ -29,6 +29,6 @@ handler.help = ['gentoken']
 handler.tags = ['owner']
 handler.command = ['gentoken', 'crearpremium', premium']
 handler.rowner = true
-handler.description = 'Crear código premium 
+handler.description = 'Crear código premium'
 
 export default handler
