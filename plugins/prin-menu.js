@@ -177,8 +177,6 @@ const ordenarTagsDisponibles = (agrupado) => {
 }
 
 const handler = async (m, { conn, usedPrefix }) => {
-  const inicio = performance.now()
-
   const nombreBot = global.nombrebot || 'Rin-Tohska'
   const creador = global.creador || 'Duan and BrayanRK'
   const modo = global.modoPublico ? 'Publico' : 'Privado'
@@ -261,20 +259,20 @@ const handler = async (m, { conn, usedPrefix }) => {
     `> Hola *${mention}* soy *${nombreBot}*, tu asistente virtual\n\n`
 
   let encabezado = `┏━❑ ${nombreBot} ❑━┓\n`
-  encabezado += `┃ Dia       : ${dia}\n`
-  encabezado += `┃ Creador   : ${creador}\n`
-  encabezado += `┃ Estado    : ${modo}\n`
-  encabezado += `┃ Version   : ${version}\n`
-  encabezado += `┃ Uptime    : ${uptimeTexto}\n`
-  encabezado += `┃ Fecha     : ${fecha}\n`
-  encabezado += `┃ Hora      : ${hora}\n`
-  encabezado += `┃ Usuarios  : ${totalUsuarios}\n`
-  encabezado += `┃ Grupos    : ${totalGrupos}\n`
-  encabezado += `┃ Premium   : ${totalPremium}\n`
-  encabezado += `┃ Comandos  : ${totalPlugins}\n`
-  encabezado += `┃ RAM       : ${formatBytes(memoriaUsada)} / ${formatBytes(memoriaTotal)}\n`
-  encabezado += `┃ Nucleos   : ${nucleos}\n`
-  encabezado += `┃ Plataforma: ${plataforma}\n`
+  encabezado += `┃ *Dia*       : > ${dia}\n`
+  encabezado += `┃ *Creador*   : > ${creador}\n`
+  encabezado += `┃ *Estado*    : > ${modo}\n`
+  encabezado += `┃ *Version*   : > ${version}\n`
+  encabezado += `┃ *Uptime*    : > ${uptimeTexto}\n`
+  encabezado += `┃ *Fecha*     : > ${fecha}\n`
+  encabezado += `┃ *Hora*      : > ${hora}\n`
+  encabezado += `┃ *Usuarios*  : > ${totalUsuarios}\n`
+  encabezado += `┃ *Grupos*    : > ${totalGrupos}\n`
+  encabezado += `┃ *Premium*   : > ${totalPremium}\n`
+  encabezado += `┃ *Comandos*  : > ${totalPlugins}\n`
+  encabezado += `┃ *RAM*       : > ${formatBytes(memoriaUsada)} / ${formatBytes(memoriaTotal)}\n`
+  encabezado += `┃ *Nucleos*   : > ${nucleos}\n`
+  encabezado += `┃ *Plataforma*: > ${plataforma}\n`
   encabezado += `┗━━━━━━━━━━━━━━┛\n`
 
   let cuerpo = ''
@@ -309,22 +307,10 @@ const handler = async (m, { conn, usedPrefix }) => {
     )
   }
 
-  const fin = performance.now()
-
-  const tiempoRespuesta =
-    ((fin - inicio) / 1000).toFixed(3)
-
-  let piePagina =
-    `\n> Usa ${usedPrefix}help <comando> para ver informacion detallada de un comando especifico\n`
-
-  piePagina +=
-    `> Tiempo de generacion: ${tiempoRespuesta} s`
-
   const textoFinal =
     saludoMencion +
     encabezado +
-    cuerpo +
-    piePagina
+    cuerpo
 
   let mediaBuffer = null
 
