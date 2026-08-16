@@ -10,9 +10,10 @@ const handler = async (m, { conn, isAdmin, isOwner }) => {
     return
   }
 
+  const menciones = (await m.mentionedJid) || []
   const objetivo = m.quoted
     ? m.quoted.sender
-    : m.mentionedJid && m.mentionedJid[0]
+    : menciones[0]
 
   if (!objetivo) {
     await conn.reply(
