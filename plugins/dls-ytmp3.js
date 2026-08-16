@@ -123,6 +123,6 @@ const handler = async (m, { conn, text }) => {
 handler.help = ['ytmp3']
 handler.tags = ['descargas']
 handler.command = ['ytmp3', 'play', 'mp3']
-handlee.description = 'busca y descarga musica'
+handler.description = 'busca y descarga musica'
 
 export default handler
