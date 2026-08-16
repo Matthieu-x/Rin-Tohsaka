@@ -155,7 +155,7 @@ const handler = async (m, { conn, text, usedPrefix }) => {
     return
   }
 
-  const estadoLimite = verificarLimiteDescargas(m.sender)
+  const estadoLimite = verificarLimiteDescargas(m.sender, conn)
   if (!estadoLimite.permitido) {
     await m.react('⛔')
     await conn.reply(m.chat, construirMensajeLimiteAlcanzado(estadoLimite, usedPrefix), m)
@@ -245,7 +245,7 @@ const handler = async (m, { conn, text, usedPrefix }) => {
       return
     }
 
-    const cantidadUsada = registrarDescarga(m.sender)
+    const cantidadUsada = registrarDescarga(m.sender, conn)
     const tiempoTotal = ((Date.now() - inicioProceso) / 1000).toFixed(2)
 
     const caption = construirCaptionInfo(
@@ -276,9 +276,13 @@ const handler = async (m, { conn, text, usedPrefix }) => {
     )
 
     let piePagina = `${SIMBOLO_NOTA} *${estadoLimite.esPremium ? 'Premium' : 'Normal'}*\n`
-    piePagina += `> Descargas hoy: ${cantidadUsada} / ${estadoLimite.limite}\n`
-    if (!estadoLimite.esPremium) {
-      piePagina += `> ${SIMBOLO_OK} Hazte premium para subir tu limite a 300 descargas diarias`
+    if (estadoLimite.ilimitado) {
+      piePagina += `> Descargas hoy: ${cantidadUsada} / Ilimitado`
+    } else {
+      piePagina += `> Descargas hoy: ${cantidadUsada} / ${estadoLimite.limite}\n`
+      if (!estadoLimite.esPremium) {
+        piePagina += `> ${SIMBOLO_OK} Hazte premium para subir tu limite a 300 descargas diarias`
+      }
     }
 
     await conn.reply(m.chat, piePagina, m)
