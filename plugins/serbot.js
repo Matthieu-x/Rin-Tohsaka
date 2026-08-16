@@ -54,7 +54,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 }
 
 handler.help = ['code']
-handler.tags = ['main']
+handler.tags = ['serbot']
 handler.command = ['serbot', 'subbot', 'code']
 handler.description = 'Hazte subbot'
 
