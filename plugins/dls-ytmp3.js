@@ -13,9 +13,14 @@ const DURACION_MAXIMA_SEGUNDOS = 30 * 60
 const PESO_MAXIMO_MB = 50
 const INTENTOS_MAXIMOS = 3
 const TIEMPO_ENTRE_INTENTOS = 1500
+const MAX_RESULTADOS_LISTA = 5
+const TIEMPO_SELECCION_MS = 3 * 60 * 1000
+const PREFIJO_FILA = '#ytmp3sel:'
 
 const cacheBusquedas = new Map()
 const TIEMPO_CACHE_MS = 5 * 60 * 1000
+
+const seleccionesPendientes = new Map()
 
 const esperar = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -103,7 +108,7 @@ const conReintentos = async (fn, etiqueta) => {
   )
 }
 
-const buscarYouTube = async (query) => {
+const buscarYouTubeLista = async (query) => {
   const clave = query.toLowerCase().trim()
 
   const enCache = cacheBusquedas.get(clave)
@@ -158,14 +163,14 @@ const buscarYouTube = async (query) => {
     return null
   }
 
-  const mejorResultado = resultados[0]
+  const lista = resultados.slice(0, MAX_RESULTADOS_LISTA)
 
   cacheBusquedas.set(clave, {
-    datos: mejorResultado,
+    datos: lista,
     timestamp: Date.now()
   })
 
-  return mejorResultado
+  return lista
 }
 
 const descargarInfo = async (youtubeUrl) => {
@@ -263,34 +268,19 @@ const construirCaptionInfo = (
   return caption
 }
 
-const handler = async (m, { conn, text, usedPrefix }) => {
-  if (!text) {
-    await conn.reply(
-      m.chat,
-      `${SIMBOLO} *Falta el nombre o link*\n\n> Ejemplo: *${usedPrefix}play shape of you*\n> También acepta un link de YouTube o YouTube Music`,
-      m
-    )
-
-    return
+const limpiarSeleccionesVencidas = () => {
+  const ahora = Date.now()
+  for (const [clave, valor] of seleccionesPendientes) {
+    if (ahora > valor.expira) seleccionesPendientes.delete(clave)
   }
+}
 
-  const estadoLimite = verificarLimiteDescargas(
-    m.sender,
-    conn
-  )
+const procesarYEnviar = async (m, conn, youtubeUrl, resultadoBusqueda, videoIdEntrada) => {
+  const estadoLimite = verificarLimiteDescargas(m.sender, conn)
 
   if (!estadoLimite.permitido) {
     await m.react('⛔')
-
-    await conn.reply(
-      m.chat,
-      construirMensajeLimiteAlcanzado(
-        estadoLimite,
-        usedPrefix
-      ),
-      m
-    )
-
+    await conn.reply(m.chat, construirMensajeLimiteAlcanzado(estadoLimite, '.'), m)
     return
   }
 
@@ -299,174 +289,80 @@ const handler = async (m, { conn, text, usedPrefix }) => {
   const inicioProceso = Date.now()
 
   try {
-    let videoId = extraerVideoId(text)
+    const duracionEstimada = convertirDuracion(resultadoBusqueda?.duration)
 
-    let resultadoBusqueda = null
-    let youtubeUrl = text.trim()
-
-    if (!videoId && esUrlYoutube(text)) {
+    if (duracionEstimada && duracionEstimada > DURACION_MAXIMA_SEGUNDOS) {
       await m.react('✖️')
-
-      await conn.reply(
-        m.chat,
-        `${SIMBOLO} *Link no reconocido*\n\n> Parece un link de YouTube pero no se pudo extraer el video ID\n> Verifica que el link esté completo`,
-        m
-      )
-
-      return
-    }
-
-    if (!videoId) {
-      resultadoBusqueda = await buscarYouTube(
-        text.trim()
-      )
-
-      if (!resultadoBusqueda) {
-        await m.react('✖️')
-
-        await conn.reply(
-          m.chat,
-          `${SIMBOLO} *Sin resultados*\n\n> No se encontró ninguna canción para *${text}*\n> Intenta con el título exacto o pega el link directo`,
-          m
-        )
-
-        return
-      }
-
-      videoId = resultadoBusqueda.videoId
-
-      youtubeUrl =
-        resultadoBusqueda.url ||
-        `https://www.youtube.com/watch?v=${videoId}`
-    } else {
-      youtubeUrl =
-        `https://www.youtube.com/watch?v=${videoId}`
-    }
-
-    const duracionEstimada =
-      convertirDuracion(
-        resultadoBusqueda?.duration
-      )
-
-    if (
-      duracionEstimada &&
-      duracionEstimada > DURACION_MAXIMA_SEGUNDOS
-    ) {
-      await m.react('✖️')
-
       await conn.reply(
         m.chat,
         `${SIMBOLO} *Video demasiado largo*\n\n> Duración: ${formatearDuracion(duracionEstimada)}\n> Máximo permitido: ${formatearDuracion(DURACION_MAXIMA_SEGUNDOS)}`,
         m
       )
-
       return
     }
 
-    const info = await descargarInfo(
-      youtubeUrl
-    )
+    const info = await descargarInfo(youtubeUrl)
 
-    const duracionFinal =
-      convertirDuracion(
-        info.duration
-      ) ||
-      duracionEstimada ||
-      0
+    const duracionFinal = convertirDuracion(info.duration) || duracionEstimada || 0
 
-    if (
-      duracionFinal >
-      DURACION_MAXIMA_SEGUNDOS
-    ) {
+    if (duracionFinal > DURACION_MAXIMA_SEGUNDOS) {
       await m.react('✖️')
-
       await conn.reply(
         m.chat,
         `${SIMBOLO} *Video demasiado largo*\n\n> Duración: ${formatearDuracion(duracionFinal)}\n> Máximo permitido: ${formatearDuracion(DURACION_MAXIMA_SEGUNDOS)}`,
         m
       )
-
       return
     }
 
-    const titulo = limpiarNombre(
-      info.title ||
-      resultadoBusqueda?.title ||
-      'Audio'
-    )
-
-    const artista =
-      info.author ||
-      info.artist ||
-      resultadoBusqueda?.author ||
-      'Desconocido'
-
-    const duracionTexto =
-      formatearDuracion(
-        duracionFinal
-      )
-
+    const titulo = limpiarNombre(info.title || resultadoBusqueda?.title || 'Audio')
+    const artista = info.author || info.artist || resultadoBusqueda?.author || 'Desconocido'
+    const duracionTexto = formatearDuracion(duracionFinal)
     const thumbnail =
       info.thumbnail ||
       resultadoBusqueda?.thumbnail ||
-      `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+      (videoIdEntrada ? `https://i.ytimg.com/vi/${videoIdEntrada}/hqdefault.jpg` : null)
 
-    const buffer =
-      await descargarABuffer(
-        info.download_url
-      )
+    const buffer = await descargarABuffer(info.download_url)
+    const pesoMb = (buffer.length / (1024 * 1024)).toFixed(2)
 
-    const pesoMb =
-      (buffer.length / (1024 * 1024)).toFixed(2)
-
-    if (
-      Number(pesoMb) >
-      PESO_MAXIMO_MB
-    ) {
+    if (Number(pesoMb) > PESO_MAXIMO_MB) {
       await m.react('✖️')
-
       await conn.reply(
         m.chat,
         `${SIMBOLO} *Archivo demasiado pesado*\n\n> Peso: ${pesoMb} MB\n> Máximo permitido: ${PESO_MAXIMO_MB} MB`,
         m
       )
-
       return
     }
 
-    const cantidadUsada =
-      registrarDescarga(
-        m.sender,
-        conn
-      )
+    const cantidadUsada = registrarDescarga(m.sender, conn)
+    const tiempoTotal = ((Date.now() - inicioProceso) / 1000).toFixed(2)
 
-    const tiempoTotal =
-      ((Date.now() - inicioProceso) / 1000)
-        .toFixed(2)
-
-    const caption =
-      construirCaptionInfo(
-        titulo,
-        artista,
-        duracionTexto,
-        pesoMb,
-        info.quality || '128 kbps',
-        info.format || 'MP3',
-        tiempoTotal
-      )
-
-    await conn.sendMessage(
-      m.chat,
-      {
-        image: {
-          url: thumbnail
-        },
-        caption
-      },
-      {
-        quoted: m
-      }
+    const caption = construirCaptionInfo(
+      titulo,
+      artista,
+      duracionTexto,
+      pesoMb,
+      info.quality || '128 kbps',
+      info.format || 'MP3',
+      tiempoTotal
     )
+
+    let piePagina = `${estadoLimite.esPremium ? 'Premium' : 'Normal'} · `
+    piePagina += estadoLimite.ilimitado
+      ? `Descargas hoy: ${cantidadUsada} / Ilimitado`
+      : `Descargas hoy: ${cantidadUsada} / ${estadoLimite.limite}`
+
+    if (thumbnail) {
+      await conn.sendMessage(
+        m.chat,
+        { image: { url: thumbnail }, caption, footer: piePagina },
+        { quoted: m }
+      )
+    } else {
+      await conn.reply(m.chat, `${caption}\n\n${SIMBOLO_NOTA} ${piePagina}`, m)
+    }
 
     await conn.sendMessage(
       m.chat,
@@ -476,51 +372,149 @@ const handler = async (m, { conn, text, usedPrefix }) => {
         fileName: `${titulo}.mp3`,
         ptt: false
       },
-      {
-        quoted: m
-      }
+      { quoted: m }
     )
 
-    let piePagina =
-      `${SIMBOLO_NOTA} *${estadoLimite.esPremium ? 'Premium' : 'Normal'}*\n`
-
-    if (estadoLimite.ilimitado) {
-      piePagina +=
-        `> Descargas hoy: ${cantidadUsada} / Ilimitado`
-    } else {
-      piePagina +=
-        `> Descargas hoy: ${cantidadUsada} / ${estadoLimite.limite}\n`
-
-      if (!estadoLimite.esPremium) {
-        piePagina +=
-          `> ${SIMBOLO_OK} Hazte premium para subir tu límite a 300 descargas diarias`
-      }
+    if (!estadoLimite.ilimitado && !estadoLimite.esPremium) {
+      await conn.reply(
+        m.chat,
+        `${SIMBOLO_NOTA} *${SIMBOLO_OK} Hazte premium para subir tu límite a 300 descargas diarias*`,
+        m
+      )
     }
 
-    await conn.reply(
-      m.chat,
-      piePagina,
-      m
-    )
-
     await m.react('✔️')
-
   } catch (error) {
     console.error('PLAY:', error)
-
     await m.react('✖️')
+    await conn.reply(m.chat, `${SIMBOLO} *Error*\n\n> ${error.message || 'Error desconocido'}`, m)
+  }
+}
 
+const handler = async (m, { conn, text, usedPrefix }) => {
+  if (!text) {
     await conn.reply(
       m.chat,
-      `${SIMBOLO} *Error*\n\n> ${error.message || 'Error desconocido'}`,
+      `${SIMBOLO} *Falta el nombre o link*\n\n> Ejemplo: *${usedPrefix}play shape of you*\n> También acepta un link de YouTube o YouTube Music`,
       m
     )
+    return
   }
+
+  const videoIdDirecto = extraerVideoId(text)
+
+  if (!videoIdDirecto && esUrlYoutube(text)) {
+    await m.react('✖️')
+    await conn.reply(
+      m.chat,
+      `${SIMBOLO} *Link no reconocido*\n\n> Parece un link de YouTube pero no se pudo extraer el video ID\n> Verifica que el link esté completo`,
+      m
+    )
+    return
+  }
+
+  if (videoIdDirecto) {
+    const youtubeUrl = `https://www.youtube.com/watch?v=${videoIdDirecto}`
+    await procesarYEnviar(m, conn, youtubeUrl, null, videoIdDirecto)
+    return
+  }
+
+  await m.react('🔎')
+
+  let resultados
+  try {
+    resultados = await buscarYouTubeLista(text.trim())
+  } catch (error) {
+    await m.react('✖️')
+    await conn.reply(m.chat, `${SIMBOLO} *Error buscando*\n\n> ${error.message}`, m)
+    return
+  }
+
+  if (!resultados?.length) {
+    await m.react('✖️')
+    await conn.reply(
+      m.chat,
+      `${SIMBOLO} *Sin resultados*\n\n> No se encontró ninguna canción para *${text}*\n> Intenta con el título exacto o pega el link directo`,
+      m
+    )
+    return
+  }
+
+  limpiarSeleccionesVencidas()
+
+  const clave = `${m.chat}|${m.sender}`
+  seleccionesPendientes.set(clave, {
+    resultados,
+    expira: Date.now() + TIEMPO_SELECCION_MS
+  })
+
+  const filas = resultados.map((resultado, indice) => ({
+    title: limpiarNombre(resultado.title || 'Sin título'),
+    description: `${resultado.author || 'Desconocido'} · ${formatearDuracion(convertirDuracion(resultado.duration))}`,
+    id: `${PREFIJO_FILA}${indice}`
+  }))
+
+  await conn.sendMessage(
+    m.chat,
+    {
+      text: `${SIMBOLO_ALT} *Elige una canción para descargar*`,
+      title: `${SIMBOLO} Resultados para "${text}"`,
+      buttonText: 'Ver resultados',
+      sections: [
+        {
+          title: 'Resultados',
+          rows: filas
+        }
+      ]
+    },
+    { quoted: m }
+  )
+}
+
+handler.before = async function (m, { conn }) {
+  if (m.mtype !== 'listResponseMessage') return
+
+  const filaId = m.msg?.singleSelectReply?.selectedRowId
+  if (!filaId || !filaId.startsWith(PREFIJO_FILA)) return
+
+  const clave = `${m.chat}|${m.sender}`
+  const pendiente = seleccionesPendientes.get(clave)
+
+  if (!pendiente) {
+    await conn.reply(
+      m.chat,
+      `${SIMBOLO} *Esa búsqueda ya venció*\n\n> Vuelve a buscar con *.play*`,
+      m
+    )
+    return true
+  }
+
+  if (Date.now() > pendiente.expira) {
+    seleccionesPendientes.delete(clave)
+    await conn.reply(
+      m.chat,
+      `${SIMBOLO} *Esa búsqueda ya venció*\n\n> Vuelve a buscar con *.play*`,
+      m
+    )
+    return true
+  }
+
+  const indice = Number(filaId.slice(PREFIJO_FILA.length))
+  const resultado = pendiente.resultados?.[indice]
+
+  if (!resultado) return true
+
+  seleccionesPendientes.delete(clave)
+
+  const youtubeUrl = resultado.url || `https://www.youtube.com/watch?v=${resultado.videoId}`
+
+  await procesarYEnviar(m, conn, youtubeUrl, resultado, resultado.videoId)
+  return true
 }
 
 handler.help = ['play']
 handler.tags = ['descargas']
 handler.command = ['ytmp3', 'play', 'mp3']
-handler.description = 'Busca y descarga música de YouTube en audio'
+handler.description = 'Busca música de YouTube y muestra una lista para elegir y descargar'
 
 export default handler
