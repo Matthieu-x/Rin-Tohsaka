@@ -40,7 +40,9 @@ const formatearDuracion = (segundos) => {
 }
 
 const buscarYouTube = async (query) => {
-  const url = `${API_BASE}/ytsearch?q=${encodeURIComponent(query)}&limit=5&apikey=${encodeURIComponent(API_KEY)}`
+  const url =
+    `${API_BASE}/ytsearch?q=${encodeURIComponent(query)}` +
+    `&limit=5&apikey=${encodeURIComponent(API_KEY)}`
 
   const respuesta = await fetch(url)
 
@@ -58,7 +60,10 @@ const buscarYouTube = async (query) => {
 }
 
 const obtenerAudio = async (youtubeUrl) => {
-  const url = `${API_BASE}/ytmp3?mode=link&url=${encodeURIComponent(youtubeUrl)}&apikey=${encodeURIComponent(API_KEY)}`
+  const url =
+    `${API_BASE}/ytmp3?mode=link` +
+    `&url=${encodeURIComponent(youtubeUrl)}` +
+    `&apikey=${encodeURIComponent(API_KEY)}`
 
   const respuesta = await fetch(url)
 
@@ -69,17 +74,21 @@ const obtenerAudio = async (youtubeUrl) => {
   const data = await respuesta.json()
 
   if (!data.ok || !data.ready || !data.download_url) {
-    throw new Error(data.message || data.reason || 'La API no pudo preparar el audio')
+    throw new Error(
+      data.message ||
+      data.reason ||
+      'La API no pudo preparar el audio'
+    )
   }
 
   return data
 }
 
-const descargarAudio = async (url) => {
+const descargarBuffer = async (url) => {
   const respuesta = await fetch(url)
 
   if (!respuesta.ok) {
-    throw new Error(`Error descargando el audio (${respuesta.status})`)
+    throw new Error(`Error descargando el archivo (${respuesta.status})`)
   }
 
   const arrayBuffer = await respuesta.arrayBuffer()
@@ -87,11 +96,29 @@ const descargarAudio = async (url) => {
   return Buffer.from(arrayBuffer)
 }
 
+const obtenerMiniatura = async (url) => {
+  if (!url) return null
+
+  try {
+    const respuesta = await fetch(url)
+
+    if (!respuesta.ok) return null
+
+    const arrayBuffer = await respuesta.arrayBuffer()
+
+    return Buffer.from(arrayBuffer)
+  } catch {
+    return null
+  }
+}
+
 const handler = async (m, { conn, text }) => {
   if (!text) {
     await conn.reply(
       m.chat,
-      `${SIMBOLO} *Falta el nombre o link*\n\n> Ejemplo: *.ytmp3 shape of you*\n> También puedes usar un link de YouTube`,
+      `${SIMBOLO} *Falta el nombre o link*\n\n` +
+      `> Ejemplo: *.ytmp3 shape of you*\n` +
+      `> También acepta un link de YouTube`,
       m
     )
     return
@@ -113,7 +140,8 @@ const handler = async (m, { conn, text }) => {
 
         await conn.reply(
           m.chat,
-          `${SIMBOLO} *Sin resultados*\n\n> No se encontró ningún resultado para *${youtubeUrl}*`,
+          `${SIMBOLO} *Sin resultados*\n\n` +
+          `> No se encontró ningún resultado para *${youtubeUrl}*`,
           m
         )
 
@@ -127,7 +155,9 @@ const handler = async (m, { conn, text }) => {
 
     const info = await obtenerAudio(youtubeUrl)
 
-    const buffer = await descargarAudio(info.download_url)
+    const buffer = await descargarBuffer(info.download_url)
+
+    const thumbnail = await obtenerMiniatura(info.thumbnail)
 
     const titulo = limpiarNombre(
       info.title ||
@@ -155,6 +185,25 @@ const handler = async (m, { conn, text }) => {
       info.quality ||
       'M4A'
 
+    const mensajeAudio = {
+      audio: buffer,
+      mimetype: info.mime_type || 'audio/mp4',
+      fileName: `${titulo}.m4a`,
+      ptt: false
+    }
+
+    if (thumbnail) {
+      mensajeAudio.jpegThumbnail = thumbnail
+    }
+
+    await conn.sendMessage(
+      m.chat,
+      mensajeAudio,
+      {
+        quoted: m
+      }
+    )
+
     const caption =
       `${SIMBOLO} *${info.title || resultadoBusqueda?.title || 'Audio'}*\n\n` +
       `${SIMBOLO_ALT} *Detalles*\n` +
@@ -165,20 +214,11 @@ const handler = async (m, { conn, text }) => {
       `> Calidad: ${info.quality || 'M4A'}\n` +
       `> Plataforma: YouTube`
 
-    await conn.sendMessage(
+    await conn.reply(
       m.chat,
-      {
-        audio: buffer,
-        mimetype: info.mime_type || 'audio/mp4',
-        fileName: `${titulo}.m4a`,
-        ptt: false
-      },
-      {
-        quoted: m
-      }
+      caption,
+      m
     )
-
-    await conn.reply(m.chat, caption, m)
 
     await m.react('✔️')
 
@@ -189,7 +229,8 @@ const handler = async (m, { conn, text }) => {
 
     await conn.reply(
       m.chat,
-      `${SIMBOLO} *Error al descargar*\n\n> ${error.message || 'Error desconocido'}`,
+      `${SIMBOLO} *Error al descargar*\n\n` +
+      `> ${error.message || 'Error desconocido'}`,
       m
     )
   }
@@ -198,6 +239,5 @@ const handler = async (m, { conn, text }) => {
 handler.help = ['ytmp3']
 handler.tags = ['descargas']
 handler.command = ['ytmp3', 'play', 'mp3']
-handler.description = 'Busca y descarga música mediante la API DVYER'
-
+handler.description = 'Busca y descarga música'
 export default handler
