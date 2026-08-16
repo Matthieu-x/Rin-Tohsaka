@@ -152,14 +152,18 @@ const handler = async (m, { conn, text }) => {
       resultadoBusqueda?.thumbnail ||
       `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
 
+    const buffer = await descargarABuffer(info.download_url)
+
+    const pesoMb = (buffer.length / (1024 * 1024)).toFixed(2)
+
     const caption =
       `${SIMBOLO} *${titulo}*\n\n` +
       `${SIMBOLO_ALT} *Detalles*\n` +
       `> Artista: ${artista}\n` +
       `> Duracion: ${duracion}\n` +
+      `> Peso: ${pesoMb} MB\n` +
       `> Calidad: ${info.quality || 'M4A'}\n` +
-      `> Formato: ${info.format || 'M4A'}\n\n` +
-      `${SIMBOLO_ALT} *Descargando audio...*`
+      `> Formato: ${info.format || 'M4A'}`
 
     await conn.sendMessage(
       m.chat,
@@ -174,10 +178,6 @@ const handler = async (m, { conn, text }) => {
       }
     )
 
-    const buffer = await descargarABuffer(info.download_url)
-
-    const pesoMb = (buffer.length / (1024 * 1024)).toFixed(2)
-
     await conn.sendMessage(
       m.chat,
       {
@@ -189,18 +189,6 @@ const handler = async (m, { conn, text }) => {
       {
         quoted: m
       }
-    )
-
-    await conn.reply(
-      m.chat,
-      `${SIMBOLO} *${titulo}*\n\n` +
-      `${SIMBOLO_ALT} *Detalles*\n` +
-      `> Artista: ${artista}\n` +
-      `> Duracion: ${duracion}\n` +
-      `> Peso: ${pesoMb} MB\n` +
-      `> Calidad: ${info.quality || 'M4A'}\n` +
-      `> Formato: ${info.format || 'M4A'}`,
-      m
     )
 
     await m.react('✔️')
