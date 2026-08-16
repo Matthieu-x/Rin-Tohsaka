@@ -242,7 +242,7 @@ const handler = async (
 
   const version =
     global.versionBot ||
-    '1.0.0'
+    '1.1.1'
 
   const esOwner =
     global.owner &&
