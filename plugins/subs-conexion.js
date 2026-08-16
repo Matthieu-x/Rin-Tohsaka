@@ -17,6 +17,7 @@ const {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const conexionesActivas = new Map()
+const codigosSolicitados = new Set()
 
 const obtenerLimiteSubbots = (esPremium) => (esPremium ? 5 : 1)
 
@@ -60,7 +61,7 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
   const connectionOptionsSub = {
     logger: pino({ level: 'silent' }),
     printQRInTerminal: false,
-    browser: ['Rin-Tohsaka', 'Chrome', '1.0.0'],
+    browser: ['MacOs', 'Safari'],
     auth: {
       creds: state.creds,
       keys: makeCacheableSignalKeyStore(state.keys, Pino({ level: 'fatal' }).child({ level: 'fatal' }))
@@ -79,7 +80,8 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
     const numeroSolicitante = m?.sender ? m.sender.split('@')[0] : null
     const numeroObjetivo = args && args.replace(/\D/g, '') ? args.replace(/\D/g, '') : numeroSolicitante
 
-    if (numeroObjetivo) {
+    if (numeroObjetivo && !codigosSolicitados.has(pathMichiJadiBot)) {
+      codigosSolicitados.add(pathMichiJadiBot)
       setTimeout(async () => {
         try {
           let codigo = await sub.requestPairingCode(numeroObjetivo)
@@ -88,11 +90,12 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
           if (m && conn) {
             await conn.reply(
               m.chat,
-              `ꕥ *Codigo de vinculacion*\n\n> Codigo: *${codigo}*\n> Abre WhatsApp en el numero que quieres usar como subbot\n> Ve a Dispositivos vinculados > Vincular con numero de telefono\n> Ingresa este codigo dentro de los proximos 60 segundos`,
+              `ꕥ *Codigo de vinculacion*\n\n> Codigo: *${codigo}*\n> Abre WhatsApp en el numero que quieres usar como subbot\n> Ve a Dispositivos vinculados > Vincular con numero de telefono\n> Ingresa este codigo dentro de los proximos 60 segundos\n\n> No pidas el codigo de nuevo mientras esperas, cada vez que se genera uno nuevo el anterior queda invalido`,
               m
             )
           }
         } catch (error) {
+          codigosSolicitados.delete(pathMichiJadiBot)
           if (m && conn) {
             await conn.reply(m.chat, `ꕥ *Error al generar el codigo*\n\n> ${error.message}`, m)
           }
@@ -111,6 +114,7 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
     const { connection, lastDisconnect } = update
 
     if (connection === 'open') {
+      codigosSolicitados.delete(pathMichiJadiBot)
       const numero = jidNormalizedUser(sub.user.id).split('@')[0]
       guardarConfigSubbot(pathMichiJadiBot, {
         numero,
@@ -131,14 +135,19 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
     if (connection === 'close') {
       const codigoError = new Boom(lastDisconnect?.error)?.output?.statusCode
       const cerroSesion = codigoError === DisconnectReason.loggedOut
+      const reinicioRequerido = codigoError === DisconnectReason.restartRequired
 
       conexionesActivas.delete(pathMichiJadiBot)
 
       if (cerroSesion) {
+        codigosSolicitados.delete(pathMichiJadiBot)
         if (existsSync(pathMichiJadiBot)) {
           rmSync(pathMichiJadiBot, { recursive: true, force: true })
         }
         console.log(chalk.red(`[ ✿ ] Subbot cerro sesion, carpeta eliminada: ${pathMichiJadiBot}`))
+      } else if (reinicioRequerido) {
+        console.log(chalk.cyan(`[ ✿ ] Reconectando subbot tras solicitar codigo: ${pathMichiJadiBot}`))
+        MichiJadiBot({ pathMichiJadiBot, m: null, conn, args: '', usedPrefix, command })
       } else {
         console.log(chalk.yellow(`[ ✿ ] Subbot desconectado, reintentando: ${pathMichiJadiBot}`))
         setTimeout(() => {
