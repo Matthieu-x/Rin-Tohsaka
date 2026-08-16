@@ -25,11 +25,11 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     return
   }
 
-  const numeroObjetivo = text ? text.replace(/\D/g, '') : senderNumber
+  const numeroObjetivo = text ? text.replace(/\D/g, '') : ''
   if (!numeroObjetivo || numeroObjetivo.length < 8) {
     await conn.reply(
       m.chat,
-      `${SIMBOLO} *Numero invalido*\n\n> Ejemplo: *${usedPrefix}serbot 5219999999999*\n> O escribe *${usedPrefix}serbot* solo para usar tu propio numero`,
+      `${SIMBOLO} *Falta el numero*\n\n> Debes indicar el numero al que se enviara el codigo\n> Ejemplo: *${usedPrefix}serbot 5219999999999*`,
       m
     )
     return
@@ -53,7 +53,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
   })
 }
 
-handler.help = ['code']
+handler.help = ['code <numero>']
 handler.tags = ['serbot']
 handler.command = ['serbot', 'subbot', 'code']
 handler.description = 'Hazte subbot'
