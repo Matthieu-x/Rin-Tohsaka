@@ -1,39 +1,89 @@
-import { search, download } from '../lib/ytmusic.js'
-import { pipeline } from 'stream/promises'
-import { createWriteStream, createReadStream, unlinkSync } from 'fs'
-import path from 'path'
-import os from 'os'
+const API_KEY = 'dvyer343179430300'
+const API_BASE = 'https://dv-yer-api.online'
 
 const SIMBOLO = 'ꕥ'
 const SIMBOLO_ALT = '〄'
 
 const extraerVideoId = (texto) => {
   const patrones = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|music\.youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/|music\.youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/
   ]
+
   for (const patron of patrones) {
     const coincidencia = texto.match(patron)
     if (coincidencia) return coincidencia[1]
   }
+
   return null
 }
 
+const limpiarNombre = (texto) => {
+  return String(texto || 'audio')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 180)
+}
+
 const formatearDuracion = (segundos) => {
-  const m = Math.floor(segundos / 60)
-  const s = Math.floor(segundos % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
+  segundos = Number(segundos || 0)
+
+  const horas = Math.floor(segundos / 3600)
+  const minutos = Math.floor((segundos % 3600) / 60)
+  const segundosRestantes = Math.floor(segundos % 60)
+
+  if (horas > 0) {
+    return `${horas}:${minutos.toString().padStart(2, '0')}:${segundosRestantes.toString().padStart(2, '0')}`
+  }
+
+  return `${minutos}:${segundosRestantes.toString().padStart(2, '0')}`
 }
 
-const elegirMejorFormato = (formatos) => {
-  const conUrl = formatos.filter((f) => f.url)
-  if (conUrl.length === 0) return null
-  return conUrl.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))[0]
-}
+const buscarYouTube = async (query) => {
+  const url = `${API_BASE}/ytsearch?q=${encodeURIComponent(query)}&limit=5&apikey=${encodeURIComponent(API_KEY)}`
 
-const descargarABuffer = async (url) => {
   const respuesta = await fetch(url)
-  if (!respuesta.ok) throw new Error(`Descarga fallida (${respuesta.status})`)
+
+  if (!respuesta.ok) {
+    throw new Error(`Error en búsqueda (${respuesta.status})`)
+  }
+
+  const data = await respuesta.json()
+
+  if (!data.ok || !data.results?.length) {
+    return null
+  }
+
+  return data.results[0]
+}
+
+const obtenerAudio = async (youtubeUrl) => {
+  const url = `${API_BASE}/ytmp3?mode=link&url=${encodeURIComponent(youtubeUrl)}&apikey=${encodeURIComponent(API_KEY)}`
+
+  const respuesta = await fetch(url)
+
+  if (!respuesta.ok) {
+    throw new Error(`Error procesando el audio (${respuesta.status})`)
+  }
+
+  const data = await respuesta.json()
+
+  if (!data.ok || !data.ready || !data.download_url) {
+    throw new Error(data.message || data.reason || 'La API no pudo preparar el audio')
+  }
+
+  return data
+}
+
+const descargarAudio = async (url) => {
+  const respuesta = await fetch(url)
+
+  if (!respuesta.ok) {
+    throw new Error(`Error descargando el audio (${respuesta.status})`)
+  }
+
   const arrayBuffer = await respuesta.arrayBuffer()
+
   return Buffer.from(arrayBuffer)
 }
 
@@ -41,7 +91,7 @@ const handler = async (m, { conn, text }) => {
   if (!text) {
     await conn.reply(
       m.chat,
-      `${SIMBOLO} *Falta el nombre o link*\n\n> Ejemplo: *.ytmp3 shape of you*\n> Tambien acepta un link de YouTube o YouTube Music`,
+      `${SIMBOLO} *Falta el nombre o link*\n\n> Ejemplo: *.ytmp3 shape of you*\n> También puedes usar un link de YouTube`,
       m
     )
     return
@@ -50,79 +100,104 @@ const handler = async (m, { conn, text }) => {
   await m.react('🕒')
 
   try {
-    let videoId = extraerVideoId(text)
-    let tituloBusqueda = null
-    let artistaBusqueda = null
+    let youtubeUrl = text.trim()
+    let resultadoBusqueda = null
+
+    const videoId = extraerVideoId(youtubeUrl)
 
     if (!videoId) {
-      const resultados = await search(text.trim(), 'songs')
-      const primero = resultados.results.find((r) => r.resultType === 'song' && r.videoId)
-      if (!primero) {
+      resultadoBusqueda = await buscarYouTube(youtubeUrl)
+
+      if (!resultadoBusqueda) {
         await m.react('✖️')
-        await conn.reply(m.chat, `${SIMBOLO} *Sin resultados*\n\n> No se encontro ninguna cancion para *${text}*`, m)
+
+        await conn.reply(
+          m.chat,
+          `${SIMBOLO} *Sin resultados*\n\n> No se encontró ningún resultado para *${youtubeUrl}*`,
+          m
+        )
+
         return
       }
-      videoId = primero.videoId
-      tituloBusqueda = primero.title
-      artistaBusqueda = primero.artists?.map((a) => a.name).join(', ') || null
+
+      youtubeUrl = resultadoBusqueda.url
+    } else {
+      youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`
     }
 
-    const info = await download(videoId)
+    const info = await obtenerAudio(youtubeUrl)
 
-    if (info.status !== 'OK') {
-      await m.react('✖️')
-      await conn.reply(
-        m.chat,
-        `${SIMBOLO} *No se pudo procesar*\n\n> Motivo: ${info.reason || 'desconocido'}`,
-        m
-      )
-      return
-    }
+    const buffer = await descargarAudio(info.download_url)
 
-    const mejorFormato = elegirMejorFormato(info.audioFormats)
-    if (!mejorFormato) {
-      await m.react('✖️')
-      await conn.reply(
-        m.chat,
-        `${SIMBOLO} *Formato no disponible*\n\n> No se encontro un formato de audio valido para este video, es posible que YouTube haya cambiado su sistema de firmas`,
-        m
-      )
-      return
-    }
+    const titulo = limpiarNombre(
+      info.title ||
+      resultadoBusqueda?.title ||
+      'Audio'
+    )
 
-    const buffer = await descargarABuffer(mejorFormato.url)
-    const duracion = formatearDuracion(info.lengthSeconds || 0)
+    const artista =
+      info.author ||
+      info.channel ||
+      resultadoBusqueda?.channel ||
+      'Desconocido'
+
+    const duracion = formatearDuracion(
+      info.duration_seconds ||
+      info.duration ||
+      resultadoBusqueda?.duration_seconds ||
+      0
+    )
+
     const pesoMb = (buffer.length / (1024 * 1024)).toFixed(2)
 
-    let caption = `${SIMBOLO} *${info.title || tituloBusqueda || 'Audio'}*\n\n`
-    caption += `${SIMBOLO_ALT} *Detalles*\n`
-    caption += `> Artista: ${info.artist || artistaBusqueda || 'Desconocido'}\n`
-    caption += `> Duracion: ${duracion}\n`
-    caption += `> Peso: ${pesoMb} MB\n`
-    caption += `> Calidad: ${mejorFormato.audioQuality || 'estandar'}`
+    const formato =
+      info.format ||
+      info.quality ||
+      'M4A'
+
+    const caption =
+      `${SIMBOLO} *${info.title || resultadoBusqueda?.title || 'Audio'}*\n\n` +
+      `${SIMBOLO_ALT} *Detalles*\n` +
+      `> Artista: ${artista}\n` +
+      `> Duración: ${duracion}\n` +
+      `> Peso: ${pesoMb} MB\n` +
+      `> Formato: ${formato}\n` +
+      `> Calidad: ${info.quality || 'M4A'}\n` +
+      `> Plataforma: YouTube`
 
     await conn.sendMessage(
       m.chat,
       {
         audio: buffer,
-        mimetype: 'audio/mpeg',
-        fileName: `${(info.title || 'audio').replace(/[\\/:*?"<>|]/g, '')}.mp3`,
+        mimetype: info.mime_type || 'audio/mp4',
+        fileName: `${titulo}.m4a`,
         ptt: false
       },
-      { quoted: m }
+      {
+        quoted: m
+      }
     )
 
     await conn.reply(m.chat, caption, m)
+
     await m.react('✔️')
+
   } catch (error) {
+    console.error('Error YTMP3:', error)
+
     await m.react('✖️')
-    await conn.reply(m.chat, `${SIMBOLO} *Error*\n\n> ${error.message}`, m)
+
+    await conn.reply(
+      m.chat,
+      `${SIMBOLO} *Error al descargar*\n\n> ${error.message || 'Error desconocido'}`,
+      m
+    )
   }
 }
 
 handler.help = ['ytmp3']
 handler.tags = ['descargas']
 handler.command = ['ytmp3', 'play', 'mp3']
-handler.description = 'busca y descarga musica'
+handler.description = 'Busca y descarga música mediante la API DVYER'
 
 export default handler
