@@ -6,7 +6,7 @@ import pino from 'pino'
 import Pino from 'pino'
 import { Boom } from '@hapi/boom'
 import { makeWASocket } from '../lib/simple.js'
-import { enviarAvisoCanal } from '../lib/canal.js'
+
 
 const {
   useMultiFileAuthState,
