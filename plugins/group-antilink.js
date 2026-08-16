@@ -71,5 +71,6 @@ handler.tags = ['group']
 handler.command = ['antilink']
 handler.description = 'Activa o desactiva la expulsion automatica por enviar links de grupo'
 handler.group = true
+hakdler.admin = true
 
 export default handler
