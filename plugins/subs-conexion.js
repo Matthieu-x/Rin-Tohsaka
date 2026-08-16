@@ -6,6 +6,7 @@ import pino from 'pino'
 import Pino from 'pino'
 import { Boom } from '@hapi/boom'
 import { makeWASocket } from '../lib/simple.js'
+import { enviarAvisoCanal } from '../lib/canal.js'
 
 const {
   useMultiFileAuthState,
@@ -160,14 +161,10 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
         )
       }
 
-      if (esSubbotNuevo && conn && global.db?.data?.canalGlobal?.jid) {
-        try {
-          await conn.sendMessage(global.db.data.canalGlobal.jid, {
-            text: `ꕥ *Nuevo subbot vinculado*\n\n> Numero: ${numero}\n> Creado por: ${m?.sender ? m.sender.split('@')[0] : numero}`
-          })
-        } catch (e) {
-          console.error('Error enviando aviso de subbot al canal:', e)
-        }
+      if (esSubbotNuevo && global.db?.data?.canalGlobal?.jid) {
+        await enviarAvisoCanal(
+          `ꕥ *Nuevo subbot vinculado*\n\n> Numero: ${numero}\n> Creado por: ${m?.sender ? m.sender.split('@')[0] : numero}`
+        )
       }
     }
 
