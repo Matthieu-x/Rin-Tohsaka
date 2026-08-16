@@ -29,6 +29,7 @@ global.jadi = "Sessions/SubBot"
 global.MichiJadibts = true
 
 global.botname = "Rin-Tohsaka"
+global.versionBot = "1.1.1"
 global.textbot = "ʀɪɴ-ᴛᴏʜsᴀᴋᴀ ᴠ1"
 global.dev = "✎ ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴅᴜᴀɴ & ʙʀᴀʏᴀɴʀᴋ"
 global.author = "© ᴍᴀᴅᴇ ᴡɪᴛʜ ᴅᴜᴀɴ & ʙʀᴀʏᴀɴʀᴋ"
