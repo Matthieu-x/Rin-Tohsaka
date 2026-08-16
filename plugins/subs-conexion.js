@@ -6,6 +6,7 @@ import pino from 'pino'
 import Pino from 'pino'
 import { Boom } from '@hapi/boom'
 import { makeWASocket } from '../lib/simple.js'
+import { enviarAvisoCanal } from '../lib/canal.js'
 
 
 const {
@@ -186,6 +187,16 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
       } else if (reinicioRequerido) {
         console.log(chalk.cyan(`[ ✿ ] Reconectando subbot tras solicitar codigo: ${pathMichiJadiBot}`))
         MichiJadiBot({ pathMichiJadiBot, m: null, conn, args: '', usedPrefix, command })
+      } else if (!sub?.authState?.creds?.registered) {
+        // El codigo nunca se uso a tiempo (vencio) o la vinculacion nunca se completo.
+        // Si seguimos reintentando en silencio, codigosSolicitados queda bloqueado
+        // y nunca se genera ni se avisa un codigo nuevo. Mejor limpiar todo para
+        // que el usuario pueda pedir un codigo nuevo con el comando.
+        codigosSolicitados.delete(pathMichiJadiBot)
+        if (existsSync(pathMichiJadiBot)) {
+          rmSync(pathMichiJadiBot, { recursive: true, force: true })
+        }
+        console.log(chalk.yellow(`[ ✿ ] Codigo no usado a tiempo, sesion eliminada: ${pathMichiJadiBot}`))
       } else {
         console.log(chalk.yellow(`[ ✿ ] Subbot desconectado, reintentando: ${pathMichiJadiBot}`))
         setTimeout(() => {
