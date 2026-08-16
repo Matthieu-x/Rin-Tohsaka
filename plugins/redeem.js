@@ -1,5 +1,4 @@
 import { redimirToken } from '../lib/premium-tokens.js'
-import { enviarAvisoCanal } from '../lib/canal.js'
 
 const SIMBOLO = 'ꕥ'
 
