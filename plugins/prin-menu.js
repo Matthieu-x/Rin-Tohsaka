@@ -22,14 +22,6 @@ const runtime = (segundos) => {
   return dDisplay + hDisplay + mDisplay + sDisplay
 }
 
-const formatBytes = (bytes) => {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-}
-
 const capitalizar = (texto) =>
   texto.charAt(0).toUpperCase() + texto.slice(1)
 
@@ -234,16 +226,6 @@ const handler = async (m, { conn, usedPrefix }) => {
       .format('dddd')
   )
 
-  const memoriaTotal = os.totalmem()
-  const memoriaLibre = os.freemem()
-  const memoriaUsada = memoriaTotal - memoriaLibre
-
-  const plataforma = `${os.type()} ${os.release()} (${os.arch()})`
-
-  const nucleos = os.cpus()
-    ? os.cpus().length
-    : 0
-
   const totalPlugins = global.plugins
     ? Object.keys(global.plugins).length
     : 0
@@ -272,9 +254,6 @@ const handler = async (m, { conn, usedPrefix }) => {
   encabezado += `┃ *Grupos*    : _${totalGrupos}_\n`
   encabezado += `┃ *Premium*   : _${totalPremium}_\n`
   encabezado += `┃ *Comandos*  : _${totalPlugins}_\n`
-  encabezado += `┃ *RAM*       : _${formatBytes(memoriaUsada)} / ${formatBytes(memoriaTotal)}_\n`
-  encabezado += `┃ *Nucleos*   : _${nucleos}_\n`
-  encabezado += `┃ *Plataforma*: _${plataforma}_\n`
   encabezado += `┗━━━━━━━━━━━━━━┛\n`
 
   let cuerpo = ''
