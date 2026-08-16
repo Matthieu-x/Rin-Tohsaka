@@ -1,7 +1,16 @@
 const SIMBOLO = 'ꕥ'
 const SIMBOLO_ALT = '〄'
 
-const handler = async (m, { conn, isAdmin, isOwner }) => {
+function resolverJid(raw, participants) {
+  if (!raw) return raw
+  if (raw.endsWith('@lid')) {
+    const match = participants?.find((p) => p.lid === raw)
+    if (match?.id) return match.id
+  }
+  return raw
+}
+
+const handler = async (m, { conn, participants, isAdmin, isOwner }) => {
   if (!isAdmin && !isOwner) {
     await m.react('✖️')
     await conn.reply(
@@ -13,9 +22,8 @@ const handler = async (m, { conn, isAdmin, isOwner }) => {
   }
 
   const menciones = (await m.mentionedJid) || []
-  const objetivo = m.quoted
-    ? m.quoted.sender
-    : menciones[0]
+  const crudo = m.quoted ? m.quoted.sender : menciones[0]
+  const objetivo = resolverJid(crudo, participants)
 
   if (!objetivo) {
     await conn.reply(
@@ -56,9 +64,9 @@ const handler = async (m, { conn, isAdmin, isOwner }) => {
   }
 }
 
-handler.help = ['promote']
+handler.help = ['promote <@mencion>']
 handler.tags = ['group']
-handler.command = ['promote', 'admin', 'ascender']
+handler.command = ['promote', 'admin']
 handler.description = 'Da admin a un usuario del grupo'
 handler.group = true
 handler.botAdmin = true
