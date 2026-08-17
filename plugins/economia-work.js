@@ -4,13 +4,9 @@ import {
     formatearTiempo
 } from '../lib/economia.js'
 
-const CONTEXTO_CANAL = {
-    forwardedNewsletterMessageInfo: {
-        newsletterJid: '120363410031000704@newsletter',
-        newsletterName: 'Rin-Tohsaka',
-        serverMessageId: 1
-    }
-}
+// Datos reales del canal
+const CANAL_JID = '120363410031000704@newsletter'
+const CANAL_NOMBRE = 'Rin-Tohsaka'
 
 const handler = async (m, { conn }) => {
     const resultado = ejecutarTrabajo(m.sender)
@@ -22,8 +18,7 @@ const handler = async (m, { conn }) => {
                 text:
                     `ꕥ *Todavía estás cansado del último laburo*\n\n` +
                     `〄 *Cooldown*\n` +
-                    `> Podés volver a trabajar en: ${formatearTiempo(resultado.restante)}`,
-                contextInfo: CONTEXTO_CANAL
+                    `> Podés volver a trabajar en: ${formatearTiempo(resultado.restante)}`
             },
             { quoted: m }
         )
@@ -44,11 +39,17 @@ const handler = async (m, { conn }) => {
             `> ${resultado.bonusTexto} (+${formatearDinero(resultado.montoBonus)})`
     }
 
+    // Este es el tipo de mensaje que realmente muestra la tarjeta
+    // clickeable de "Ver canal" — no un contextInfo dentro de un texto normal.
     await conn.sendMessage(
         m.chat,
         {
             text: texto,
-            contextInfo: CONTEXTO_CANAL
+            newsletterFollowerInvite: {
+                newsletterJid: CANAL_JID,
+                newsletterName: CANAL_NOMBRE
+                // jpegThumbnail: fs.readFileSync('./media/rin.jpeg') // opcional
+            }
         },
         { quoted: m }
     )
@@ -56,8 +57,8 @@ const handler = async (m, { conn }) => {
 
 handler.help = ['trabajar']
 handler.tags = ['economia']
-handler.command = ['trabajar', 'work', 'laburar']
+handler.command = ['trabajar', 'work']
 
-handler.description = 'Trabajá para ganar dinero'
+handler.description = 'Trabajá para ganar dinero (cooldown de 30 min)'
 
 export default handler
