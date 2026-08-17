@@ -1,5 +1,9 @@
 import fetch from 'node-fetch'
-import { verificarLimiteDescargas, registrarDescarga, construirMensajeLimiteAlcanzado } from '../lib/limits.js'
+import {
+    verificarLimiteDescargas,
+    registrarDescarga,
+    construirMensajeLimiteAlcanzado
+} from '../lib/limits.js'
 
 const API_KEY = 'edward'
 const API_BASE = 'https://dv-edward.onrender.com'
@@ -11,21 +15,28 @@ const SIMBOLO_NOTA = '✐'
 
 const DURACION_MAXIMA_SEGUNDOS = 30 * 60
 const PESO_MAXIMO_MB = 50
+
 const INTENTOS_MAXIMOS = 3
 const TIEMPO_ENTRE_INTENTOS = 1500
+
 const MAX_RESULTADOS_LISTA = 5
 const TIEMPO_SELECCION_MS = 3 * 60 * 1000
+
 const PREFIJO_FILA = '#ytmp3sel:'
 
 const cacheBusquedas = new Map()
-const TIEMPO_CACHE_MS = 5 * 60 * 1000
-
 const seleccionesPendientes = new Map()
 
-const esperar = (ms) =>
+const TIEMPO_CACHE_MS = 5 * 60 * 1000
+
+const esperar = ms =>
     new Promise(resolve => setTimeout(resolve, ms))
 
-const fetchConTimeout = async (url, opciones = {}, timeout = 20000) => {
+const fetchConTimeout = async (
+    url,
+    opciones = {},
+    timeout = 20000
+) => {
     const controller = new AbortController()
 
     const timer = setTimeout(() => {
@@ -50,7 +61,7 @@ const fetchConTimeout = async (url, opciones = {}, timeout = 20000) => {
     }
 }
 
-const extraerVideoId = (texto) => {
+const extraerVideoId = texto => {
     const patrones = [
         /(?:youtube\.com\/watch\?v=|youtu\.be\/|music\.youtube\.com\/watch\?v=|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/
     ]
@@ -66,10 +77,10 @@ const extraerVideoId = (texto) => {
     return null
 }
 
-const esUrlYoutube = (texto) =>
+const esUrlYoutube = texto =>
     /(?:youtube\.com|youtu\.be)/i.test(texto)
 
-const normalizarConsulta = (texto) => {
+const normalizarConsulta = texto => {
     return String(texto || '')
         .trim()
         .replace(/\s+/g, ' ')
@@ -80,7 +91,7 @@ const normalizarConsulta = (texto) => {
         .trim()
 }
 
-const convertirDuracion = (duracion) => {
+const convertirDuracion = duracion => {
     if (typeof duracion === 'number') {
         return duracion
     }
@@ -106,13 +117,16 @@ const convertirDuracion = (duracion) => {
     }
 
     if (partes.length === 2) {
-        return partes[0] * 60 + partes[1]
+        return (
+            partes[0] * 60 +
+            partes[1]
+        )
     }
 
     return Number(partes[0]) || 0
 }
 
-const formatearDuracion = (segundos) => {
+const formatearDuracion = segundos => {
     const total = Number(segundos || 0)
 
     const h = Math.floor(total / 3600)
@@ -126,7 +140,7 @@ const formatearDuracion = (segundos) => {
     return `${m}:${String(s).padStart(2, '0')}`
 }
 
-const limpiarNombre = (texto) => {
+const limpiarNombre = texto => {
     return String(texto || 'audio')
         .replace(/[\\/:*?"<>|]/g, '')
         .replace(/\s+/g, ' ')
@@ -137,39 +151,51 @@ const limpiarNombre = (texto) => {
 const conReintentos = async (fn, etiqueta) => {
     let ultimoError = null
 
-    for (let intento = 1; intento <= INTENTOS_MAXIMOS; intento++) {
+    for (
+        let intento = 1;
+        intento <= INTENTOS_MAXIMOS;
+        intento++
+    ) {
         try {
             console.log(
-                `[PLAY] ${etiqueta}: intento ${intento}/${INTENTOS_MAXIMOS}`
+                `[PLAY] ${etiqueta}: ${intento}/${INTENTOS_MAXIMOS}`
             )
 
             return await fn()
+
         } catch (error) {
             ultimoError = error
 
             console.error(
-                `[PLAY] ${etiqueta} intento ${intento}:`,
+                `[PLAY] ${etiqueta} ${intento}:`,
                 error?.message || error
             )
 
-            if (intento < INTENTOS_MAXIMOS) {
-                await esperar(TIEMPO_ENTRE_INTENTOS * intento)
+            if (
+                intento < INTENTOS_MAXIMOS
+            ) {
+                await esperar(
+                    TIEMPO_ENTRE_INTENTOS * intento
+                )
             }
         }
     }
 
     throw new Error(
         `${etiqueta} falló tras ${INTENTOS_MAXIMOS} intentos: ${
-            ultimoError?.message || 'Error desconocido'
+            ultimoError?.message ||
+            'Error desconocido'
         }`
     )
 }
 
-const obtenerJson = async (res) => {
+const obtenerJson = async res => {
     const texto = await res.text()
 
     if (!texto) {
-        throw new Error('La API devolvió una respuesta vacía')
+        throw new Error(
+            'La API devolvió una respuesta vacía'
+        )
     }
 
     try {
@@ -181,53 +207,68 @@ const obtenerJson = async (res) => {
         )
 
         throw new Error(
-            'La API devolvió una respuesta que no es JSON'
+            'La API devolvió una respuesta inválida'
         )
     }
 }
 
-const buscarYouTubeLista = async (query) => {
-    const consultaOriginal = String(query || '').trim()
+const buscarYouTubeLista = async query => {
+    const consultaOriginal =
+        String(query || '').trim()
 
-    const clave = consultaOriginal
-        .toLowerCase()
-        .replace(/\s+/g, ' ')
+    const clave =
+        consultaOriginal
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
 
-    const enCache = cacheBusquedas.get(clave)
+    const cache =
+        cacheBusquedas.get(clave)
 
     if (
-        enCache &&
-        Date.now() - enCache.timestamp < TIEMPO_CACHE_MS
+        cache &&
+        Date.now() - cache.timestamp <
+            TIEMPO_CACHE_MS
     ) {
-        console.log('[PLAY] Resultado obtenido desde caché')
+        console.log(
+            '[PLAY] Resultado desde caché'
+        )
 
-        return enCache.datos
+        return cache.datos
     }
 
-    const ejecutarBusqueda = async (consulta) => {
+    const ejecutarBusqueda = async consulta => {
         const url =
             `${API_BASE}/api/search/youtube` +
             `?apiKey=${encodeURIComponent(API_KEY)}` +
             `&query=${encodeURIComponent(consulta)}`
 
-        console.log('[PLAY] Buscando:', consulta)
-        console.log('[PLAY] Endpoint:', `${API_BASE}/api/search/youtube`)
-
-        const res = await fetchConTimeout(
-            url,
-            {
-                method: 'GET',
-                headers: {
-                    Accept: 'application/json',
-                    'User-Agent': 'Si-Ying-Bot/1.0'
-                }
-            },
-            20000
+        console.log(
+            '[PLAY] Buscando:',
+            consulta
         )
 
-        console.log('[PLAY] HTTP:', res.status)
+        const res =
+            await fetchConTimeout(
+                url,
+                {
+                    method: 'GET',
+                    headers: {
+                        Accept:
+                            'application/json',
+                        'User-Agent':
+                            'Si-Ying-Bot/1.0'
+                    }
+                },
+                20000
+            )
 
-        const data = await obtenerJson(res)
+        console.log(
+            '[PLAY] HTTP:',
+            res.status
+        )
+
+        const data =
+            await obtenerJson(res)
 
         console.log(
             '[PLAY] API status:',
@@ -243,8 +284,7 @@ const buscarYouTubeLista = async (query) => {
         }
 
         if (
-            !data ||
-            !Array.isArray(data.data) ||
+            !Array.isArray(data?.data) ||
             !data.data.length
         ) {
             throw new Error(
@@ -261,38 +301,50 @@ const buscarYouTubeLista = async (query) => {
     let ultimoError = null
 
     try {
-        resultados = await conReintentos(
-            () => ejecutarBusqueda(consultaOriginal),
-            'Búsqueda'
-        )
+        resultados =
+            await conReintentos(
+                () =>
+                    ejecutarBusqueda(
+                        consultaOriginal
+                    ),
+                'Búsqueda'
+            )
+
     } catch (error) {
         ultimoError = error
 
         console.error(
-            '[PLAY] Error búsqueda principal:',
-            error?.message || error
+            '[PLAY] Búsqueda principal:',
+            error?.message
         )
     }
 
     if (!resultados?.length) {
-        const consultaAlterna =
-            normalizarConsulta(consultaOriginal)
+        const alternativa =
+            normalizarConsulta(
+                consultaOriginal
+            )
 
         if (
-            consultaAlterna &&
-            consultaAlterna.toLowerCase() !== clave
+            alternativa &&
+            alternativa.toLowerCase() !== clave
         ) {
             try {
-                resultados = await conReintentos(
-                    () => ejecutarBusqueda(consultaAlterna),
-                    'Búsqueda alterna'
-                )
+                resultados =
+                    await conReintentos(
+                        () =>
+                            ejecutarBusqueda(
+                                alternativa
+                            ),
+                        'Búsqueda alterna'
+                    )
+
             } catch (error) {
                 ultimoError = error
 
                 console.error(
-                    '[PLAY] Error búsqueda alterna:',
-                    error?.message || error
+                    '[PLAY] Búsqueda alterna:',
+                    error?.message
                 )
             }
         }
@@ -306,49 +358,63 @@ const buscarYouTubeLista = async (query) => {
         return null
     }
 
-    const lista = resultados
-        .filter(Boolean)
-        .slice(0, MAX_RESULTADOS_LISTA)
+    const lista =
+        resultados
+            .filter(Boolean)
+            .slice(
+                0,
+                MAX_RESULTADOS_LISTA
+            )
 
     if (!lista.length) {
         return null
     }
 
-    cacheBusquedas.set(clave, {
-        datos: lista,
-        timestamp: Date.now()
-    })
+    cacheBusquedas.set(
+        clave,
+        {
+            datos: lista,
+            timestamp: Date.now()
+        }
+    )
 
     return lista
 }
 
-const descargarInfo = async (youtubeUrl) => {
+const descargarInfo = async youtubeUrl => {
     const ejecutar = async () => {
         const url =
             `${API_BASE}/api/download/ytaudio` +
             `?url=${encodeURIComponent(youtubeUrl)}` +
             `&apiKey=${encodeURIComponent(API_KEY)}`
 
-        console.log('[PLAY] Procesando:', youtubeUrl)
-
-        const res = await fetchConTimeout(
-            url,
-            {
-                method: 'GET',
-                headers: {
-                    Accept: 'application/json',
-                    'User-Agent': 'Si-Ying-Bot/1.0'
-                }
-            },
-            60000
+        console.log(
+            '[PLAY] Procesando:',
+            youtubeUrl
         )
+
+        const res =
+            await fetchConTimeout(
+                url,
+                {
+                    method: 'GET',
+                    headers: {
+                        Accept:
+                            'application/json',
+                        'User-Agent':
+                            'Si-Ying-Bot/1.0'
+                    }
+                },
+                60000
+            )
 
         console.log(
             '[PLAY] Procesamiento HTTP:',
             res.status
         )
 
-        const data = await obtenerJson(res)
+        const data =
+            await obtenerJson(res)
 
         if (!res.ok) {
             throw new Error(
@@ -378,23 +444,29 @@ const descargarInfo = async (youtubeUrl) => {
     )
 }
 
-const descargarABuffer = async (url) => {
+const descargarABuffer = async url => {
     if (!url) {
-        throw new Error('La API no proporcionó un enlace de descarga')
+        throw new Error(
+            'La API no proporcionó el enlace de descarga'
+        )
     }
 
-    console.log('[PLAY] Descargando archivo')
-
-    const res = await fetchConTimeout(
-        url,
-        {
-            method: 'GET',
-            headers: {
-                'User-Agent': 'Si-Ying-Bot/1.0'
-            }
-        },
-        90000
+    console.log(
+        '[PLAY] Descargando archivo...'
     )
+
+    const res =
+        await fetchConTimeout(
+            url,
+            {
+                method: 'GET',
+                headers: {
+                    'User-Agent':
+                        'Si-Ying-Bot/1.0'
+                }
+            },
+            90000
+        )
 
     if (!res.ok) {
         throw new Error(
@@ -403,25 +475,33 @@ const descargarABuffer = async (url) => {
     }
 
     const contentLength =
-        res.headers.get('content-length')
+        res.headers.get(
+            'content-length'
+        )
 
     if (
         contentLength &&
         Number(contentLength) >
-            PESO_MAXIMO_MB * 1024 * 1024
+            PESO_MAXIMO_MB *
+            1024 *
+            1024
     ) {
         throw new Error(
             `El archivo pesa más de ${PESO_MAXIMO_MB} MB`
         )
     }
 
-    const arrayBuffer = await res.arrayBuffer()
+    const arrayBuffer =
+        await res.arrayBuffer()
 
-    const buffer = Buffer.from(arrayBuffer)
+    const buffer =
+        Buffer.from(arrayBuffer)
 
     if (
         buffer.length >
-        PESO_MAXIMO_MB * 1024 * 1024
+        PESO_MAXIMO_MB *
+        1024 *
+        1024
     ) {
         throw new Error(
             `El archivo pesa más de ${PESO_MAXIMO_MB} MB`
@@ -440,15 +520,29 @@ const construirCaptionInfo = (
     formato,
     tiempoTotal
 ) => {
-    let caption = `${SIMBOLO} *${titulo}*\n\n`
+    let caption =
+        `${SIMBOLO} *${titulo}*\n\n`
 
-    caption += `${SIMBOLO_ALT} *Detalles*\n`
-    caption += `> Artista: ${artista}\n`
-    caption += `> Duración: ${duracion}\n`
-    caption += `> Peso: ${pesoMb} MB\n`
-    caption += `> Calidad: ${calidad}\n`
-    caption += `> Formato: ${formato}\n`
-    caption += `> Tiempo de proceso: ${tiempoTotal} s`
+    caption +=
+        `${SIMBOLO_ALT} *Detalles*\n`
+
+    caption +=
+        `> Artista: ${artista}\n`
+
+    caption +=
+        `> Duración: ${duracion}\n`
+
+    caption +=
+        `> Peso: ${pesoMb} MB\n`
+
+    caption +=
+        `> Calidad: ${calidad}\n`
+
+    caption +=
+        `> Formato: ${formato}\n`
+
+    caption +=
+        `> Tiempo de proceso: ${tiempoTotal} s`
 
     return caption
 }
@@ -456,11 +550,139 @@ const construirCaptionInfo = (
 const limpiarSeleccionesVencidas = () => {
     const ahora = Date.now()
 
-    for (const [clave, valor] of seleccionesPendientes) {
-        if (!valor || ahora > valor.expira) {
-            seleccionesPendientes.delete(clave)
+    for (
+        const [clave, valor]
+        of seleccionesPendientes
+    ) {
+        if (
+            !valor ||
+            ahora > valor.expira
+        ) {
+            seleccionesPendientes.delete(
+                clave
+            )
         }
     }
+}
+
+const desempaquetarMensaje = msg => {
+    let actual =
+        msg?.msg || msg
+
+    let anterior = null
+
+    while (
+        actual &&
+        actual !== anterior
+    ) {
+        anterior = actual
+
+        if (
+            actual.ephemeralMessage?.message
+        ) {
+            actual =
+                actual.ephemeralMessage.message
+
+            continue
+        }
+
+        if (
+            actual.viewOnceMessage?.message
+        ) {
+            actual =
+                actual.viewOnceMessage.message
+
+            continue
+        }
+
+        if (
+            actual.viewOnceMessageV2?.message
+        ) {
+            actual =
+                actual.viewOnceMessageV2.message
+
+            continue
+        }
+
+        if (
+            actual.viewOnceMessageV2Extension?.message
+        ) {
+            actual =
+                actual.viewOnceMessageV2Extension.message
+
+            continue
+        }
+
+        break
+    }
+
+    return actual
+}
+
+const obtenerSeleccion = m => {
+    const msg =
+        desempaquetarMensaje(m)
+
+    const listId =
+        msg
+            ?.listResponseMessage
+            ?.singleSelectReply
+            ?.selectedRowId
+
+    if (listId) {
+        return listId
+    }
+
+    const interactive =
+        msg
+            ?.interactiveResponseMessage
+            ?.nativeFlowResponseMessage
+
+    if (
+        interactive?.paramsJson
+    ) {
+        try {
+            const params =
+                JSON.parse(
+                    interactive.paramsJson
+                )
+
+            if (
+                params?.id
+            ) {
+                return params.id
+            }
+
+            if (
+                params?.selectedId
+            ) {
+                return params.selectedId
+            }
+
+            if (
+                params?.row_id
+            ) {
+                return params.row_id
+            }
+
+        } catch (error) {
+            console.error(
+                '[PLAY] Error leyendo paramsJson:',
+                error?.message
+            )
+        }
+    }
+
+    const buttonId =
+        msg
+            ?.buttonsResponseMessage
+            ?.selectedButtonId
+
+    if (buttonId) {
+        return buttonId
+    }
+
+    return null
 }
 
 const procesarYEnviar = async (
@@ -476,7 +698,9 @@ const procesarYEnviar = async (
             conn
         )
 
-    if (!estadoLimite.permitido) {
+    if (
+        !estadoLimite.permitido
+    ) {
         await m.react('⛔')
 
         await conn.reply(
@@ -493,7 +717,8 @@ const procesarYEnviar = async (
 
     await m.react('🕒')
 
-    const inicioProceso = Date.now()
+    const inicioProceso =
+        Date.now()
 
     try {
         const duracionEstimada =
@@ -520,10 +745,14 @@ const procesarYEnviar = async (
         }
 
         const info =
-            await descargarInfo(youtubeUrl)
+            await descargarInfo(
+                youtubeUrl
+            )
 
         const duracionFinal =
-            convertirDuracion(info.duration) ||
+            convertirDuracion(
+                info.duration
+            ) ||
             duracionEstimada ||
             0
 
@@ -544,11 +773,12 @@ const procesarYEnviar = async (
             return
         }
 
-        const titulo = limpiarNombre(
-            info.title ||
-            resultadoBusqueda?.title ||
-            'Audio'
-        )
+        const titulo =
+            limpiarNombre(
+                info.title ||
+                resultadoBusqueda?.title ||
+                'Audio'
+            )
 
         const artista =
             info.author ||
@@ -557,7 +787,9 @@ const procesarYEnviar = async (
             'Desconocido'
 
         const duracionTexto =
-            formatearDuracion(duracionFinal)
+            formatearDuracion(
+                duracionFinal
+            )
 
         const thumbnail =
             info.thumbnail ||
@@ -604,7 +836,8 @@ const procesarYEnviar = async (
 
         const tiempoTotal =
             (
-                (Date.now() - inicioProceso) /
+                (Date.now() -
+                    inicioProceso) /
                 1000
             ).toFixed(2)
 
@@ -614,8 +847,10 @@ const procesarYEnviar = async (
                 artista,
                 duracionTexto,
                 pesoMb,
-                info.quality || '128 kbps',
-                info.format || 'MP3',
+                info.quality ||
+                    '128 kbps',
+                info.format ||
+                    'MP3',
                 tiempoTotal
             )
 
@@ -656,7 +891,8 @@ const procesarYEnviar = async (
                 mimetype:
                     info.mime_type ||
                     'audio/mpeg',
-                fileName: `${titulo}.mp3`,
+                fileName:
+                    `${titulo}.mp3`,
                 ptt: false
             },
             {
@@ -679,7 +915,7 @@ const procesarYEnviar = async (
 
     } catch (error) {
         console.error(
-            '[PLAY] Error final:',
+            '[PLAY] ERROR:',
             error
         )
 
@@ -720,7 +956,9 @@ const handler = async (
         text.trim()
 
     const videoIdDirecto =
-        extraerVideoId(consulta)
+        extraerVideoId(
+            consulta
+        )
 
     if (
         !videoIdDirecto &&
@@ -763,9 +1001,10 @@ const handler = async (
             await buscarYouTubeLista(
                 consulta
             )
+
     } catch (error) {
         console.error(
-            '[PLAY] Error buscando:',
+            '[PLAY] ERROR BUSCANDO:',
             error
         )
 
@@ -773,8 +1012,10 @@ const handler = async (
 
         await conn.reply(
             m.chat,
-            `${SIMBOLO} *Error buscando*\n\n` +
-            `> ${error?.message || 'Error desconocido'}`,
+            `${SIMBOLO} *Error buscando*\n\n> ${
+                error?.message ||
+                'Error desconocido'
+            }`,
             m
         )
 
@@ -815,10 +1056,11 @@ const handler = async (
     const filas =
         resultados.map(
             (resultado, indice) => ({
-                title: limpiarNombre(
-                    resultado.title ||
-                    'Sin título'
-                ),
+                title:
+                    limpiarNombre(
+                        resultado.title ||
+                        'Sin título'
+                    ),
 
                 description:
                     `${resultado.author || 'Desconocido'} · ` +
@@ -833,31 +1075,64 @@ const handler = async (
             })
         )
 
-    await conn.sendMessage(
-        m.chat,
-        {
-            text:
-                `${SIMBOLO_ALT} *Elige una canción para descargar*`,
+    try {
+        await conn.sendMessage(
+            m.chat,
+            {
+                text:
+                    `${SIMBOLO_ALT} *Elige una canción para descargar*`,
 
-            title:
-                `${SIMBOLO} Resultados para "${consulta}"`,
+                title:
+                    `${SIMBOLO} Resultados para "${consulta}"`,
 
-            buttonText:
-                'Ver resultados',
+                footer:
+                    'Selecciona una canción',
 
-            sections: [
-                {
-                    title: 'Resultados',
-                    rows: filas
-                }
-            ]
-        },
-        {
-            quoted: m
-        }
-    )
+                buttons: [
+                    {
+                        text:
+                            '🎵 Ver canciones',
 
-    await m.react('✔️')
+                        sections: [
+                            {
+                                title:
+                                    'Resultados',
+
+                                rows:
+                                    filas
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                quoted: m
+            }
+        )
+
+        await m.react('✔️')
+
+    } catch (error) {
+        console.error(
+            '[PLAY] ERROR ENVIANDO LISTA:',
+            error
+        )
+
+        seleccionesPendientes.delete(
+            clave
+        )
+
+        await m.react('✖️')
+
+        await conn.reply(
+            m.chat,
+            `${SIMBOLO} *No se pudo mostrar el selector*\n\n> ${
+                error?.message ||
+                'Error desconocido'
+            }`,
+            m
+        )
+    }
 }
 
 handler.before = async function (
@@ -866,25 +1141,23 @@ handler.before = async function (
         conn
     }
 ) {
-    if (
-        m.mtype !==
-        'listResponseMessage'
-    ) {
-        return
-    }
-
     const filaId =
-        m.msg?.singleSelectReply
-            ?.selectedRowId
+        obtenerSeleccion(m)
 
     if (
         !filaId ||
-        !filaId.startsWith(
-            PREFIJO_FILA
-        )
+        !String(filaId)
+            .startsWith(
+                PREFIJO_FILA
+            )
     ) {
         return
     }
+
+    console.log(
+        '[PLAY] Selección recibida:',
+        filaId
+    )
 
     const clave =
         `${m.chat}|${m.sender}`
@@ -897,8 +1170,7 @@ handler.before = async function (
     if (!pendiente) {
         await conn.reply(
             m.chat,
-            `${SIMBOLO} *Esa búsqueda ya venció*\n\n` +
-            `> Vuelve a buscar con *.play*`,
+            `${SIMBOLO} *Esa búsqueda ya venció*\n\n> Vuelve a buscar con *.play*`,
             m
         )
 
@@ -915,8 +1187,7 @@ handler.before = async function (
 
         await conn.reply(
             m.chat,
-            `${SIMBOLO} *Esa búsqueda ya venció*\n\n` +
-            `> Vuelve a buscar con *.play*`,
+            `${SIMBOLO} *Esa búsqueda ya venció*\n\n> Vuelve a buscar con *.play*`,
             m
         )
 
@@ -925,9 +1196,10 @@ handler.before = async function (
 
     const indice =
         Number(
-            filaId.slice(
-                PREFIJO_FILA.length
-            )
+            String(filaId)
+                .slice(
+                    PREFIJO_FILA.length
+                )
         )
 
     if (
@@ -938,7 +1210,9 @@ handler.before = async function (
     }
 
     const resultado =
-        pendiente.resultados?.[indice]
+        pendiente
+            .resultados
+            ?. [indice]
 
     if (!resultado) {
         await conn.reply(
@@ -998,6 +1272,6 @@ handler.command = [
 ]
 
 handler.description =
-    'Busca música de YouTube y muestra una lista para elegir y descargar'
+    'Busca música de YouTube y muestra un selector para descargar'
 
 export default handler
