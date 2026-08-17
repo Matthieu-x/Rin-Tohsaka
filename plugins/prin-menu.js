@@ -12,6 +12,76 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const RUTA_FOTO_MENU = path.join(__dirname, '../media/rin.jpeg')
 
+const PAISES_SOPORTADOS = [
+  { prefijo: '504', nombre: 'Honduras', zona: 'America/Tegucigalpa' },
+  { prefijo: '502', nombre: 'Guatemala', zona: 'America/Guatemala' },
+  { prefijo: '503', nombre: 'El Salvador', zona: 'America/El_Salvador' },
+  { prefijo: '505', nombre: 'Nicaragua', zona: 'America/Managua' },
+  { prefijo: '506', nombre: 'Costa Rica', zona: 'America/Costa_Rica' },
+  { prefijo: '507', nombre: 'Panama', zona: 'America/Panama' },
+  { prefijo: '593', nombre: 'Ecuador', zona: 'America/Guayaquil' },
+  { prefijo: '591', nombre: 'Bolivia', zona: 'America/La_Paz' },
+  { prefijo: '595', nombre: 'Paraguay', zona: 'America/Asuncion' },
+  { prefijo: '598', nombre: 'Uruguay', zona: 'America/Montevideo' },
+  { prefijo: '1809', nombre: 'Republica Dominicana', zona: 'America/Santo_Domingo' },
+  { prefijo: '1829', nombre: 'Republica Dominicana', zona: 'America/Santo_Domingo' },
+  { prefijo: '1849', nombre: 'Republica Dominicana', zona: 'America/Santo_Domingo' },
+  { prefijo: '51', nombre: 'Peru', zona: 'America/Lima' },
+  { prefijo: '52', nombre: 'Mexico', zona: 'America/Mexico_City' },
+  { prefijo: '53', nombre: 'Cuba', zona: 'America/Havana' },
+  { prefijo: '54', nombre: 'Argentina', zona: 'America/Argentina/Buenos_Aires' },
+  { prefijo: '55', nombre: 'Brasil', zona: 'America/Sao_Paulo' },
+  { prefijo: '56', nombre: 'Chile', zona: 'America/Santiago' },
+  { prefijo: '57', nombre: 'Colombia', zona: 'America/Bogota' },
+  { prefijo: '58', nombre: 'Venezuela', zona: 'America/Caracas' },
+  { prefijo: '34', nombre: 'España', zona: 'Europe/Madrid' },
+  { prefijo: '1', nombre: 'Estados Unidos', zona: 'America/New_York' }
+]
+
+const ZONA_POR_DEFECTO = 'America/Tegucigalpa'
+
+const obtenerPaisPorNumero = (numero) => {
+  const soloDigitos = String(numero || '').replace(/\D/g, '')
+
+  const coincidencia = PAISES_SOPORTADOS
+    .slice()
+    .sort((a, b) => b.prefijo.length - a.prefijo.length)
+    .find((pais) => soloDigitos.startsWith(pais.prefijo))
+
+  if (coincidencia) return coincidencia
+
+  return {
+    nombre: 'No identificado',
+    zona: ZONA_POR_DEFECTO
+  }
+}
+const obtenerTipoBot = (conn) => {
+  if (!conn.isSubBot) {
+    return { etiqueta: 'Principal', esSubbot: false, esPremium: false }
+  }
+
+  const numeroBot = conn.user?.jid?.split('@')[0]
+  const rutaConfig = path.join('./Sessions/SubBot', numeroBot || '', 'config.json')
+
+  let creadoPor = null
+  try {
+    if (fs.existsSync(rutaConfig)) {
+      const config = JSON.parse(fs.readFileSync(rutaConfig))
+      creadoPor = config?.creadoPor || null
+    }
+  } catch (e) {}
+
+  const esPremium = creadoPor
+    ? Boolean(global.db?.data?.users?.[`${creadoPor}@s.whatsapp.net`]?.premium)
+    : false
+
+  return {
+    etiqueta: esPremium ? 'Subbot Premium' : 'Subbot Normal',
+    esSubbot: true,
+    esPremium
+  }
+}
+
 const runtime = (segundos) => {
   segundos = Number(segundos)
 
@@ -294,20 +364,27 @@ const handler = async (
   const uptimeTexto =
     runtime(process.uptime())
 
+  const pais =
+    obtenerPaisPorNumero(
+      m.sender.split('@')[0]
+    )
+
+  const tipoBot = obtenerTipoBot(conn)
+
   const fecha =
     moment
-      .tz('America/Santiago')
+      .tz(pais.zona)
       .format('DD/MM/YYYY')
 
   const hora =
     moment
-      .tz('America/Santiago')
+      .tz(pais.zona)
       .format('HH:mm:ss')
 
   const dia =
     capitalizar(
       moment
-        .tz('America/Santiago')
+        .tz(pais.zona)
         .locale('es')
         .format('dddd')
     )
@@ -344,6 +421,12 @@ const handler = async (
 
   encabezado +=
     `┃ *Dia*       : _${dia}_\n`
+
+  encabezado +=
+    `┃ *Pais*      : _${pais.nombre}_\n`
+
+  encabezado +=
+    `┃ *Tipo*      : _${tipoBot.etiqueta}_\n`
 
   encabezado +=
     `┃ *Estado*    : _${modo}_\n`
