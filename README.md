@@ -14,7 +14,7 @@
 
 ---
 
-## ꕥ Creadores
+## ꕥ Creador
 
 <table align="center">
 <tr>
