@@ -3,7 +3,6 @@ import { join } from 'path'
 import { obtenerSubbotsActivos } from './subs-conexion.js'
 
 const SIMBOLO = 'ꕥ'
-const SIMBOLO_ALT = '〄'
 
 const runtime = (segundos) => {
   segundos = Number(segundos)
@@ -11,10 +10,14 @@ const runtime = (segundos) => {
   const d = Math.floor(segundos / (3600 * 24))
   const h = Math.floor((segundos % (3600 * 24)) / 3600)
   const m = Math.floor((segundos % 3600) / 60)
+  const s = Math.floor(segundos % 60)
 
-  if (d > 0) return `${d}d ${h}h`
-  if (h > 0) return `${h}h ${m}m`
-  return `${m}m`
+  const dDisplay = d > 0 ? d + (d === 1 ? ' dia, ' : ' dias, ') : ''
+  const hDisplay = h > 0 ? h + (h === 1 ? ' hora, ' : ' horas, ') : ''
+  const mDisplay = m > 0 ? m + (m === 1 ? ' minuto, ' : ' minutos, ') : ''
+  const sDisplay = s > 0 ? s + (s === 1 ? ' segundo' : ' segundos') : ''
+
+  return dDisplay + hDisplay + mDisplay + sDisplay || '0 segundos'
 }
 
 const leerConfig = (rutaCarpeta) => {
@@ -40,15 +43,11 @@ const handler = async (m, { conn, usedPrefix }) => {
   const listaConDatos = activos
     .map((activo) => {
       const config = leerConfig(activo.path)
-      const creadorJid = config?.creadoPor ? `${config.creadoPor}@s.whatsapp.net` : null
-      const esPremium = creadorJid ? Boolean(global.db?.data?.users?.[creadorJid]?.premium) : false
-
       return {
         numero: activo.numero || config?.numero || 'Desconocido',
         conectado: activo.conectado,
         creadoPor: config?.creadoPor || null,
-        creadoEn: config?.creadoEn || null,
-        esPremium
+        creadoEn: config?.creadoEn || null
       }
     })
     .filter((sub) => esOwner || sub.creadoPor === senderNumber)
@@ -62,42 +61,30 @@ const handler = async (m, { conn, usedPrefix }) => {
     return
   }
 
-  const construirFila = (sub) => {
+  let texto = `${SIMBOLO} *Subbots activos*\n\n`
+
+  listaConDatos.forEach((sub, i) => {
     const estado = sub.conectado ? 'Conectado' : 'Conectando'
-    const tiempoActivo = sub.creadoEn ? runtime((Date.now() - sub.creadoEn) / 1000) : '?'
+    const tiempoActivo = sub.creadoEn ? runtime((Date.now() - sub.creadoEn) / 1000) : 'Desconocido'
 
-    let descripcion = `${estado} · ${tiempoActivo}`
-    if (esOwner && sub.creadoPor) descripcion += ` · Creado por ${sub.creadoPor}`
-
-    return {
-      title: sub.numero,
-      description: descripcion,
-      id: `#subbotinfo:${sub.numero}`
+    texto += `╭─❑ SUBBOT ${i + 1} ❑\n`
+    texto += `│ Numero: ${sub.numero}\n`
+    texto += `│ Estado: ${estado}\n`
+    if (esOwner) {
+      texto += `│ Creado por: ${sub.creadoPor || 'Desconocido'}\n`
     }
-  }
+    texto += `│ Activo desde: ${tiempoActivo}\n`
+    texto += `╰────────────────\n`
+  })
 
-  const premium = listaConDatos.filter((s) => s.esPremium).map(construirFila)
-  const normales = listaConDatos.filter((s) => !s.esPremium).map(construirFila)
+  texto += `\n> Total: ${listaConDatos.length} subbot${listaConDatos.length === 1 ? '' : 's'}`
 
-  const sections = []
-  if (premium.length) sections.push({ title: `Premium (${premium.length})`, rows: premium })
-  if (normales.length) sections.push({ title: `Normales (${normales.length})`, rows: normales })
-
-  await conn.sendMessage(
-    m.chat,
-    {
-      text: `${SIMBOLO_ALT} *Total: ${listaConDatos.length} subbot${listaConDatos.length === 1 ? '' : 's'}*`,
-      title: `${SIMBOLO} Subbots activos`,
-      buttonText: 'Ver subbots',
-      sections
-    },
-    { quoted: m }
-  )
+  await conn.reply(m.chat, texto, m)
 }
 
 handler.help = ['bots']
 handler.tags = ['serbot']
 handler.command = ['bots', 'listbots', 'subbots']
-handler.description = 'Lista los subbots activos separados por Premium y Normal'
+handler.description = 'Lista los subbots activos'
 
 export default handler
