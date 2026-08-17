@@ -13,7 +13,7 @@ const handler = async (m, { conn, groupMetadata }) => {
             text:
                 `ꕥ *Pareja Formada*\n\n` +
                 `〄 *Integrantes*\n` +
-                `> ${toM(a)} y ${toM(b)}\n\n` +
+                `${toM(a)} y ${toM(b)}\n\n` +
                 `> Deberían casarse, hacen una bonita pareja`,
             mentions: [a, b]
         },
