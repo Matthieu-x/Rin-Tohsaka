@@ -1,7 +1,7 @@
 const SIMBOLO = 'ꕥ'
 const SIMBOLO_ALT = '〄'
 
-const handler = async (m, { conn, isAdmin, isOwner }) => {
+const handler = async (m, { conn, isAdmin, isOwner, groupMetadata }) => {
   if (!isAdmin && !isOwner) {
     await m.react('✖️')
     await conn.reply(
@@ -17,7 +17,7 @@ const handler = async (m, { conn, isAdmin, isOwner }) => {
 
     let texto = `${SIMBOLO} *Grupo cerrado*\n\n`
     texto += `${SIMBOLO_ALT} *Detalles*\n`
-    texto += `> Grupo: ${m.chat}\n`
+    texto += `> Grupo: ${groupMetadata.subject}\n`
     texto += `> Acción realizada por: @${m.sender.split('@')[0]}\n`
     texto += `> Los usuarios ya no pueden enviar mensajes`
 
