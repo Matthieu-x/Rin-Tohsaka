@@ -25,12 +25,18 @@ const handler = async (m, { conn, chat, isAdmin, isOwner }) => {
     return
   }
 
+  const jidAnterior = chat.primaryBot
+  const numeroAnterior = jidAnterior.split('@')[0]
+
   chat.primaryBot = null
 
-  await conn.reply(
+  await conn.sendMessage(
     m.chat,
-    `${SIMBOLO} *Restricción quitada*\n\n> Todos los bots y subbots presentes en el grupo volverán a responder`,
-    m
+    {
+      text: `${SIMBOLO} *Restricción quitada*\n\n> @${numeroAnterior} ya no es el único bot\n> Todos los bots y subbots presentes en el grupo volverán a responder`,
+      mentions: [jidAnterior]
+    },
+    { quoted: m }
   )
 
   await m.react('✔️')
