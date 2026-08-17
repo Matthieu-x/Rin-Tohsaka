@@ -37,7 +37,7 @@
 </tr>
 </table>
 
-> Desarrollado y mantenido por **Duan** ([@Edward-oficial](https://github.com/Edward-oficial)) y **BrayanRK** ([@BrayanRK](https://github.com/BrayanRK))
+> Desarrollado y mantenido por **Duan** ([@Edward-oficial](https://github.com/Edward-oficial)) 
 
 ---
 
@@ -73,6 +73,6 @@ node index.js
 
 <div align="center">
 
-*✎ _Duan and BrayanRK_*
+*✎ _Duan_*
 
 </div>
