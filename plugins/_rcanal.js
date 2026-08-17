@@ -63,7 +63,7 @@ export async function before(m, { conn }) {
           title: nombreBot,
           body: '✎ ⍴᥆ᥕᥱrᥱძ ᑲᥡ 𝗗𝘂𝗮𝗻',
           thumbnailUrl: bannerFinal,
-          sourceUrl: 'https://dv-edward',
+          sourceUrl: 'https://dv-edward.onrender.com',
           mediaType: 1,
           renderLargerThumbnail: false
         }
