@@ -2,6 +2,8 @@ import fs from 'fs'
 import { join } from 'path'
 import { obtenerSubbotsActivos } from './subs-conexion.js'
 
+const SIMBOLO = 'ꕥ'
+
 const runtime = (segundos) => {
   segundos = Number(segundos)
 
@@ -28,13 +30,14 @@ const leerConfig = (rutaCarpeta) => {
   }
 }
 
-// Ajustá esto si tu bot guarda el premium en otro lado (ej: una db propia, JSON, etc)
+// Mismo campo que usa redeem.js (premiumExpira) — ajustá si tu bot lo guarda distinto
 const esPremium = (numero) => {
   if (!numero || numero === 'Desconocido') return false
 
   const jid = `${numero}@s.whatsapp.net`
+  const expira = global.db?.data?.users?.[jid]?.premiumExpira
 
-  return Boolean(global.db?.data?.users?.[jid]?.premium)
+  return Boolean(expira && expira > Date.now())
 }
 
 const handler = async (m, { conn, usedPrefix }) => {
@@ -65,25 +68,21 @@ const handler = async (m, { conn, usedPrefix }) => {
   if (listaConDatos.length === 0) {
     await conn.reply(
       m.chat,
-      `ꕥ *Sin subbots activos*\n\n` +
-      `〄 *Detalles*\n` +
-      `> ${esOwner ? 'No hay ningún subbot conectado en este momento' : 'No tenés ningún subbot conectado en este momento'}\n\n` +
-      `✐ *Sugerencia*\n` +
-      `> Usá *${usedPrefix}serbot <número>* para crear uno`,
+      `${SIMBOLO} *Sin subbots activos*\n\n> ${esOwner ? 'No hay ningun subbot conectado en este momento' : 'No tienes ningun subbot conectado en este momento'}\n> Usa *${usedPrefix}serbot <numero>* para crear uno`,
       m
     )
     return
   }
 
-  let texto = `ꕥ *Subbots activos*\n\n`
+  let texto = `${SIMBOLO} *Subbots activos*\n\n`
 
   listaConDatos.forEach((sub, i) => {
-    const estado = sub.conectado ?  Conectado' : 'Conectando'
-    const plan = sub.premium ? ' Premium' : 'Normal'
+    const estado = sub.conectado ? 'Conectado' : 'Conectando'
+    const plan = sub.premium ? 'Premium' : 'Normal'
     const tiempoActivo = sub.creadoEn ? runtime((Date.now() - sub.creadoEn) / 1000) : 'Desconocido'
 
-    texto += `〄 *Subbot ${i + 1}*\n`
-    texto += `> Número: ${sub.numero}\n`
+    texto += `> Subbot ${i + 1}\n`
+    texto += `> Numero: ${sub.numero}\n`
     texto += `> Estado: ${estado}\n`
     texto += `> Plan: ${plan}\n`
 
@@ -98,9 +97,7 @@ const handler = async (m, { conn, usedPrefix }) => {
     }
   })
 
-  texto +=
-    `\n\n✰ *Total*\n` +
-    `> ${listaConDatos.length} subbot${listaConDatos.length === 1 ? '' : 's'}`
+  texto += `\n\n> Total: ${listaConDatos.length} subbot${listaConDatos.length === 1 ? '' : 's'}`
 
   await conn.reply(m.chat, texto, m)
 }
