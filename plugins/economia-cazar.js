@@ -46,6 +46,5 @@ handler.help = ['cazar']
 handler.tags = ['economia']
 handler.command = ['cazar', 'hunt', 'cazeria']
 
-handler.description = 'Salí a cazar para ganar dinero (cooldown de 35 min)'
-
+handler.description = 'Salí a cazar para ganar dinero']
 export default handler
