@@ -139,7 +139,7 @@ const construirBloqueCategoria = (tag, plugins, usedPrefix) => {
     const aliasesVisibles = aliases.slice(0, 3)
 
     const linea = aliasesVisibles
-      .map((alias) => `(${usedPrefix})${alias}`)
+      .map((alias) => `${usedPrefix}${alias}`)
       .join(' , ')
 
     bloque += `│ ${linea}\n`
@@ -275,7 +275,7 @@ const handler = async (m, { conn, usedPrefix }) => {
 
   const mention = '@' + m.sender.split('@')[0]
 
-  const saludoMencion = `> Hola *${mention}*, soy *${nombreBot}*, tu asistente virtual\n\n`
+  const saludoMencion = `> Hola *${mention}* soy *${nombreBot}*, tu asistente virtual\n\n`
 
   let encabezado = `┏━❑ ${nombreBot} ❑━┓\n`
   encabezado += `┃ *Dia*       : _${dia}_\n`
