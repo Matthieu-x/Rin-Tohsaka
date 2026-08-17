@@ -58,5 +58,6 @@ const handler = async (m, { conn, text }) => {
 handler.help = ['afk [razón]']
 handler.tags = ['fun']
 handler.command = ['afk']
+handler.description = 'Usuario afk'
 
 export default handler
