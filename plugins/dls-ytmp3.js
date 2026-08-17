@@ -24,10 +24,10 @@ const TIEMPO_SELECCION_MS = 3 * 60 * 1000
 
 const PREFIJO_FILA = '#ytmp3sel:'
 
+const TIEMPO_CACHE_MS = 5 * 60 * 1000
+
 const cacheBusquedas = new Map()
 const seleccionesPendientes = new Map()
-
-const TIEMPO_CACHE_MS = 5 * 60 * 1000
 
 const esperar = ms =>
     new Promise(resolve => setTimeout(resolve, ms))
@@ -158,16 +158,15 @@ const conReintentos = async (fn, etiqueta) => {
     ) {
         try {
             console.log(
-                `[PLAY] ${etiqueta}: ${intento}/${INTENTOS_MAXIMOS}`
+                `[PLAY] ${etiqueta}: intento ${intento}/${INTENTOS_MAXIMOS}`
             )
 
             return await fn()
-
         } catch (error) {
             ultimoError = error
 
             console.error(
-                `[PLAY] ${etiqueta} ${intento}:`,
+                `[PLAY] ${etiqueta} intento ${intento}:`,
                 error?.message || error
             )
 
@@ -230,7 +229,7 @@ const buscarYouTubeLista = async query => {
             TIEMPO_CACHE_MS
     ) {
         console.log(
-            '[PLAY] Resultado desde caché'
+            '[PLAY] Resultado obtenido desde caché'
         )
 
         return cache.datos
@@ -245,6 +244,11 @@ const buscarYouTubeLista = async query => {
         console.log(
             '[PLAY] Buscando:',
             consulta
+        )
+
+        console.log(
+            '[PLAY] Endpoint:',
+            `${API_BASE}/api/search/youtube`
         )
 
         const res =
@@ -309,41 +313,39 @@ const buscarYouTubeLista = async query => {
                     ),
                 'Búsqueda'
             )
-
     } catch (error) {
         ultimoError = error
 
         console.error(
-            '[PLAY] Búsqueda principal:',
+            '[PLAY] Error búsqueda principal:',
             error?.message
         )
     }
 
     if (!resultados?.length) {
-        const alternativa =
+        const consultaAlterna =
             normalizarConsulta(
                 consultaOriginal
             )
 
         if (
-            alternativa &&
-            alternativa.toLowerCase() !== clave
+            consultaAlterna &&
+            consultaAlterna.toLowerCase() !== clave
         ) {
             try {
                 resultados =
                     await conReintentos(
                         () =>
                             ejecutarBusqueda(
-                                alternativa
+                                consultaAlterna
                             ),
                         'Búsqueda alterna'
                     )
-
             } catch (error) {
                 ultimoError = error
 
                 console.error(
-                    '[PLAY] Búsqueda alterna:',
+                    '[PLAY] Error búsqueda alterna:',
                     error?.message
                 )
             }
@@ -565,9 +567,9 @@ const limpiarSeleccionesVencidas = () => {
     }
 }
 
-const desempaquetarMensaje = msg => {
+const desempaquetarMensaje = m => {
     let actual =
-        msg?.msg || msg
+        m?.msg || m
 
     let anterior = null
 
@@ -578,7 +580,7 @@ const desempaquetarMensaje = msg => {
         anterior = actual
 
         if (
-            actual.ephemeralMessage?.message
+            actual?.ephemeralMessage?.message
         ) {
             actual =
                 actual.ephemeralMessage.message
@@ -587,7 +589,7 @@ const desempaquetarMensaje = msg => {
         }
 
         if (
-            actual.viewOnceMessage?.message
+            actual?.viewOnceMessage?.message
         ) {
             actual =
                 actual.viewOnceMessage.message
@@ -596,7 +598,7 @@ const desempaquetarMensaje = msg => {
         }
 
         if (
-            actual.viewOnceMessageV2?.message
+            actual?.viewOnceMessageV2?.message
         ) {
             actual =
                 actual.viewOnceMessageV2.message
@@ -605,10 +607,14 @@ const desempaquetarMensaje = msg => {
         }
 
         if (
-            actual.viewOnceMessageV2Extension?.message
+            actual
+                ?.viewOnceMessageV2Extension
+                ?.message
         ) {
             actual =
-                actual.viewOnceMessageV2Extension.message
+                actual
+                    .viewOnceMessageV2Extension
+                    .message
 
             continue
         }
@@ -619,9 +625,77 @@ const desempaquetarMensaje = msg => {
     return actual
 }
 
+const extraerIdInteractivo = msg => {
+    const interactive =
+        msg?.interactiveResponseMessage
+
+    if (!interactive) {
+        return null
+    }
+
+    const nativeFlow =
+        interactive
+            ?.nativeFlowResponseMessage
+
+    const paramsJson =
+        nativeFlow?.paramsJson
+
+    console.log(
+        '[PLAY] Native Flow recibido:',
+        paramsJson
+    )
+
+    if (!paramsJson) {
+        return null
+    }
+
+    try {
+        const params =
+            JSON.parse(paramsJson)
+
+        console.log(
+            '[PLAY] Native Flow params:',
+            params
+        )
+
+        return (
+            params?.id ||
+            params?.selectedId ||
+            params?.selectedRowId ||
+            params?.row_id ||
+            null
+        )
+
+    } catch (error) {
+        console.error(
+            '[PLAY] Error leyendo paramsJson:',
+            error
+        )
+
+        return null
+    }
+}
+
 const obtenerSeleccion = m => {
     const msg =
         desempaquetarMensaje(m)
+
+    console.log(
+        '[PLAY] Tipo recibido:',
+        m?.mtype
+    )
+
+    console.log(
+        '[PLAY] Claves del mensaje:',
+        Object.keys(msg || {})
+    )
+
+    const interactiveId =
+        extraerIdInteractivo(msg)
+
+    if (interactiveId) {
+        return interactiveId
+    }
 
     const listId =
         msg
@@ -630,47 +704,12 @@ const obtenerSeleccion = m => {
             ?.selectedRowId
 
     if (listId) {
+        console.log(
+            '[PLAY] List ID:',
+            listId
+        )
+
         return listId
-    }
-
-    const interactive =
-        msg
-            ?.interactiveResponseMessage
-            ?.nativeFlowResponseMessage
-
-    if (
-        interactive?.paramsJson
-    ) {
-        try {
-            const params =
-                JSON.parse(
-                    interactive.paramsJson
-                )
-
-            if (
-                params?.id
-            ) {
-                return params.id
-            }
-
-            if (
-                params?.selectedId
-            ) {
-                return params.selectedId
-            }
-
-            if (
-                params?.row_id
-            ) {
-                return params.row_id
-            }
-
-        } catch (error) {
-            console.error(
-                '[PLAY] Error leyendo paramsJson:',
-                error?.message
-            )
-        }
     }
 
     const buttonId =
@@ -679,6 +718,11 @@ const obtenerSeleccion = m => {
             ?.selectedButtonId
 
     if (buttonId) {
+        console.log(
+            '[PLAY] Button ID:',
+            buttonId
+        )
+
         return buttonId
     }
 
@@ -915,7 +959,7 @@ const procesarYEnviar = async (
 
     } catch (error) {
         console.error(
-            '[PLAY] ERROR:',
+            '[PLAY] ERROR PROCESANDO:',
             error
         )
 
@@ -1075,6 +1119,15 @@ const handler = async (
             })
         )
 
+    console.log(
+        '[PLAY] Filas:',
+        JSON.stringify(
+            filas,
+            null,
+            2
+        )
+    )
+
     try {
         await conn.sendMessage(
             m.chat,
@@ -1110,11 +1163,15 @@ const handler = async (
             }
         )
 
+        console.log(
+            '[PLAY] Selector enviado correctamente'
+        )
+
         await m.react('✔️')
 
     } catch (error) {
         console.error(
-            '[PLAY] ERROR ENVIANDO LISTA:',
+            '[PLAY] ERROR ENVIANDO SELECTOR:',
             error
         )
 
@@ -1141,120 +1198,162 @@ handler.before = async function (
         conn
     }
 ) {
-    const filaId =
-        obtenerSeleccion(m)
+    try {
+        console.log(
+            '[PLAY] BEFORE:',
+            m?.mtype
+        )
 
-    if (
-        !filaId ||
-        !String(filaId)
-            .startsWith(
-                PREFIJO_FILA
+        const filaId =
+            obtenerSeleccion(m)
+
+        if (!filaId) {
+            return
+        }
+
+        console.log(
+            '[PLAY] SELECCIÓN DETECTADA:',
+            filaId
+        )
+
+        if (
+            !String(filaId)
+                .startsWith(
+                    PREFIJO_FILA
+                )
+        ) {
+            return
+        }
+
+        const clave =
+            `${m.chat}|${m.sender}`
+
+        const pendiente =
+            seleccionesPendientes.get(
+                clave
             )
-    ) {
-        return
-    }
 
-    console.log(
-        '[PLAY] Selección recibida:',
-        filaId
-    )
+        if (!pendiente) {
+            await conn.reply(
+                m.chat,
+                `${SIMBOLO} *Esa búsqueda ya venció*\n\n> Vuelve a buscar con *.play*`,
+                m
+            )
 
-    const clave =
-        `${m.chat}|${m.sender}`
+            return true
+        }
 
-    const pendiente =
-        seleccionesPendientes.get(
-            clave
+        if (
+            Date.now() >
+            pendiente.expira
+        ) {
+            seleccionesPendientes.delete(
+                clave
+            )
+
+            await conn.reply(
+                m.chat,
+                `${SIMBOLO} *Esa búsqueda ya venció*\n\n> Vuelve a buscar con *.play*`,
+                m
+            )
+
+            return true
+        }
+
+        const indice =
+            Number(
+                String(filaId)
+                    .slice(
+                        PREFIJO_FILA.length
+                    )
+            )
+
+        if (
+            !Number.isInteger(indice) ||
+            indice < 0
+        ) {
+            return true
+        }
+
+        const resultado =
+            pendiente
+                .resultados?.[indice]
+
+        if (!resultado) {
+            await conn.reply(
+                m.chat,
+                `${SIMBOLO} *Resultado inválido*\n\n> Vuelve a realizar la búsqueda.`,
+                m
+            )
+
+            return true
+        }
+
+        console.log(
+            '[PLAY] RESULTADO SELECCIONADO:',
+            JSON.stringify(
+                resultado,
+                null,
+                2
+            )
         )
 
-    if (!pendiente) {
-        await conn.reply(
-            m.chat,
-            `${SIMBOLO} *Esa búsqueda ya venció*\n\n> Vuelve a buscar con *.play*`,
-            m
-        )
-
-        return true
-    }
-
-    if (
-        Date.now() >
-        pendiente.expira
-    ) {
         seleccionesPendientes.delete(
             clave
         )
 
-        await conn.reply(
-            m.chat,
-            `${SIMBOLO} *Esa búsqueda ya venció*\n\n> Vuelve a buscar con *.play*`,
-            m
+        const youtubeUrl =
+            resultado.url ||
+            (
+                resultado.videoId
+                    ? `https://www.youtube.com/watch?v=${resultado.videoId}`
+                    : null
+            )
+
+        if (!youtubeUrl) {
+            await conn.reply(
+                m.chat,
+                `${SIMBOLO} *No se encontró el enlace del video seleccionado*`,
+                m
+            )
+
+            return true
+        }
+
+        console.log(
+            '[PLAY] URL A DESCARGAR:',
+            youtubeUrl
         )
 
-        return true
-    }
-
-    const indice =
-        Number(
-            String(filaId)
-                .slice(
-                    PREFIJO_FILA.length
-                )
-        )
-
-    if (
-        !Number.isInteger(indice) ||
-        indice < 0
-    ) {
-        return true
-    }
-
-    const resultado =
-        pendiente
-            .resultados
-            ?. [indice]
-
-    if (!resultado) {
-        await conn.reply(
-            m.chat,
-            `${SIMBOLO} *Resultado inválido*\n\n> Vuelve a realizar la búsqueda.`,
-            m
-        )
-
-        return true
-    }
-
-    seleccionesPendientes.delete(
-        clave
-    )
-
-    const youtubeUrl =
-        resultado.url ||
-        (
+        await procesarYEnviar(
+            m,
+            conn,
+            youtubeUrl,
+            resultado,
             resultado.videoId
-                ? `https://www.youtube.com/watch?v=${resultado.videoId}`
-                : null
-        )
-
-    if (!youtubeUrl) {
-        await conn.reply(
-            m.chat,
-            `${SIMBOLO} *No se encontró el enlace del video seleccionado*`,
-            m
         )
 
         return true
+
+    } catch (error) {
+        console.error(
+            '[PLAY] ERROR EN HANDLER.BEFORE:',
+            error
+        )
+
+        try {
+            await conn.reply(
+                m.chat,
+                `${SIMBOLO} *Error procesando la selección*\n\n> ${
+                    error?.message ||
+                    'Error desconocido'
+                }`,
+                m
+            )
+        } catch {}
+
+        return true
     }
-
-    await procesarYEnviar(
-        m,
-        conn,
-        youtubeUrl,
-        resultado,
-        resultado.videoId
-    )
-
-    return true
 }
 
 handler.help = [
