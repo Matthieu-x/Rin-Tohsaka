@@ -44,8 +44,8 @@ export async function before(m, { conn }) {
 
     // Usa el canal generado por _fakes.js
     const channelData = global.channelRD || {
-      id: newsletterJidRandom || '120363403739366547@newsletter',
-      name: 'Duan 𝗖𝗛𝗡𝗟︎'
+      id: newsletterJidRandom || '120363410031000704@newsletter',
+      name: 'Rin-Tohsaka'
     }
 
     global.rcanal = {
@@ -63,7 +63,7 @@ export async function before(m, { conn }) {
           title: nombreBot,
           body: '✎ ⍴᥆ᥕᥱrᥱძ ᑲᥡ 𝗗𝘂𝗮𝗻',
           thumbnailUrl: bannerFinal,
-          sourceUrl: 'https://api-adonix.ultraplus.click',
+          sourceUrl: 'https://dv-edward',
           mediaType: 1,
           renderLargerThumbnail: false
         }
