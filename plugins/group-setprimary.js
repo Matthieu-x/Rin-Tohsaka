@@ -27,15 +27,15 @@ const handler = async (m, { conn, chat, participants, isAdmin, isOwner }) => {
   }
 
   const menciones = (await m.mentionedJid) || []
-  const crudo = menciones[0] || m.quoted?.sender || conn.user.jid
+  const crudo = menciones[0] || m.quoted?.sender || conn.jid
   const jidObjetivo = resolverJid(crudo, participants)
 
   const numeroObjetivoDigitos = jidObjetivo.split('@')[0].replace(/\D/g, '')
 
   const botConectado = (global.conns || []).find((c) => {
-    if (!c?.user?.jid || c.ws?.socket?.readyState === 3) return false
-    if (c.user.jid === jidObjetivo) return true
-    return c.user.jid.split('@')[0].replace(/\D/g, '') === numeroObjetivoDigitos
+    if (!c?.jid || c.ws?.socket?.readyState === 3) return false
+    if (c.jid === jidObjetivo) return true
+    return c.jid.split('@')[0].replace(/\D/g, '') === numeroObjetivoDigitos
   })
 
   if (!botConectado) {
@@ -48,9 +48,9 @@ const handler = async (m, { conn, chat, participants, isAdmin, isOwner }) => {
     return
   }
 
-  const numeroObjetivo = botConectado.user.jid.split('@')[0]
+  const numeroObjetivo = botConectado.jid.split('@')[0]
 
-  if (chat.primaryBot === botConectado.user.jid) {
+  if (chat.primaryBot === botConectado.jid) {
     await conn.reply(
       m.chat,
       `${SIMBOLO} *Ese bot ya es el único activo en este grupo*\n\n> Número: @${numeroObjetivo}`,
@@ -59,7 +59,7 @@ const handler = async (m, { conn, chat, participants, isAdmin, isOwner }) => {
     return
   }
 
-  chat.primaryBot = botConectado.user.jid
+  chat.primaryBot = botConectado.jid
 
   let texto = `${SIMBOLO} *Bot único configurado*\n\n`
   texto += `${SIMBOLO_ALT} *Detalles*\n`
@@ -71,7 +71,7 @@ const handler = async (m, { conn, chat, participants, isAdmin, isOwner }) => {
     m.chat,
     {
       text: texto,
-      mentions: [botConectado.user.jid]
+      mentions: [botConectado.jid]
     },
     { quoted: m }
   )
