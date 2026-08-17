@@ -24,7 +24,7 @@ const handler = async (m, { conn }) => {
 }
 
 handler.help = ['delete']
-handler.tags = ['grupo']
+handler.tags = ['group']
 handler.command = ['del', 'delete', 'borrar']
 handler.group = true
 handler.admin = true
