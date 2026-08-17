@@ -474,13 +474,75 @@ const limpiarArchivo = async ruta => {
     } catch {}
 }
 
-const remuxRapido = (rutaEntrada, rutaSalida) => {
+const inspeccionarConFfprobe = ruta => {
+    return new Promise((resolve, reject) => {
+        ffmpeg.ffprobe(ruta, (error, metadata) => {
+            if (error) {
+                reject(error)
+                return
+            }
+
+            resolve(metadata)
+        })
+    })
+}
+
+const validarVideoJugable = async ruta => {
+    const metadata =
+        await inspeccionarConFfprobe(ruta)
+
+    const streamVideo =
+        metadata?.streams?.find(
+            s => s.codec_type === 'video'
+        )
+
+    const streamAudio =
+        metadata?.streams?.find(
+            s => s.codec_type === 'audio'
+        )
+
+    const duracion =
+        Number(
+            metadata?.format?.duration || 0
+        )
+
+    if (!streamVideo) {
+        throw new Error(
+            'El archivo procesado no tiene pista de video'
+        )
+    }
+
+    if (!duracion || duracion <= 0) {
+        throw new Error(
+            'El archivo procesado quedó con duración inválida (corrupto)'
+        )
+    }
+
+    return {
+        duracion,
+        tieneAudio: Boolean(streamAudio)
+    }
+}
+
+const recodificarSiempre = (rutaEntrada, rutaSalida) => {
     return new Promise((resolve, reject) => {
         ffmpeg(rutaEntrada)
+            .videoCodec('libx264')
             .outputOptions([
-                '-c copy',
-                '-movflags +faststart'
+                '-preset veryfast',
+                '-profile:v main',
+                '-level 4.0',
+                '-pix_fmt yuv420p',
+                '-crf 23',
+                '-movflags +faststart',
+                '-max_muxing_queue_size 1024',
+                '-fflags +genpts',
+                '-vsync 2'
             ])
+            .audioCodec('aac')
+            .audioBitrate('128k')
+            .audioChannels(2)
+            .audioFrequency(44100)
             .format('mp4')
             .on('error', reject)
             .on('end', resolve)
@@ -488,18 +550,20 @@ const remuxRapido = (rutaEntrada, rutaSalida) => {
     })
 }
 
-const recodificar = (rutaEntrada, rutaSalida) => {
+const recodificarSinAudioProblema = (rutaEntrada, rutaSalida) => {
     return new Promise((resolve, reject) => {
         ffmpeg(rutaEntrada)
             .videoCodec('libx264')
             .outputOptions([
                 '-preset veryfast',
-                '-crf 23',
+                '-profile:v main',
+                '-level 4.0',
                 '-pix_fmt yuv420p',
-                '-movflags +faststart'
+                '-crf 23',
+                '-movflags +faststart',
+                '-max_muxing_queue_size 1024'
             ])
-            .audioCodec('aac')
-            .audioBitrate('128k')
+            .noAudio()
             .format('mp4')
             .on('error', reject)
             .on('end', resolve)
@@ -564,17 +628,26 @@ const procesarVideoConFfmpeg = async (
         )
 
         try {
-            await remuxRapido(
+            await recodificarSiempre(
                 rutaEntrada,
                 rutaSalida
             )
+
+            await validarVideoJugable(
+                rutaSalida
+            )
+
         } catch {
             await limpiarArchivo(
                 rutaSalida
             )
 
-            await recodificar(
+            await recodificarSinAudioProblema(
                 rutaEntrada,
+                rutaSalida
+            )
+
+            await validarVideoJugable(
                 rutaSalida
             )
         }
@@ -953,7 +1026,7 @@ const procesarYEnviar = async (
                 pesoMb,
                 info.quality ||
                     'Desconocida',
-                'MP4',
+                'MP4 (H.264/AAC)',
                 tiempoTotal
             )
 
