@@ -569,7 +569,7 @@ const limpiarSeleccionesVencidas = () => {
 
 const desempaquetarMensaje = m => {
     let actual =
-        m?.msg || m
+        m?.message || m?.msg || m
 
     let anterior = null
 
