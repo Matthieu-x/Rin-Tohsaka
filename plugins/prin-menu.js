@@ -163,9 +163,7 @@ const agruparPluginsPorTag = (plugins, esOwner) => {
     const plugin = plugins[key]
 
     if (!plugin || plugin.disabled) continue
-
     if (!plugin.command && !plugin.customPrefix) continue
-
     if (plugin.owner && !esOwner) continue
     if (plugin.rowner && !esOwner) continue
 
@@ -257,7 +255,6 @@ const handler = async (m, { conn, usedPrefix }) => {
       : 0
 
   const uptimeTexto = runtime(process.uptime())
-
   const tipoBot = obtenerTipoBot(conn)
 
   const fecha = moment.tz(ZONA_POR_DEFECTO).format('DD/MM/YYYY')
