@@ -496,11 +496,6 @@ const validarVideoJugable = async ruta => {
             s => s.codec_type === 'video'
         )
 
-    const streamAudio =
-        metadata?.streams?.find(
-            s => s.codec_type === 'audio'
-        )
-
     const duracion =
         Number(
             metadata?.format?.duration || 0
@@ -508,36 +503,46 @@ const validarVideoJugable = async ruta => {
 
     if (!streamVideo) {
         throw new Error(
-            'El archivo procesado no tiene pista de video'
+            'El archivo no tiene pista de video'
         )
     }
 
     if (!duracion || duracion <= 0) {
         throw new Error(
-            'El archivo procesado quedó con duración inválida (corrupto)'
+            'El archivo quedó con duración inválida (corrupto)'
         )
     }
 
-    return {
-        duracion,
-        tieneAudio: Boolean(streamAudio)
-    }
+    return true
 }
 
-const recodificarSiempre = (rutaEntrada, rutaSalida) => {
+const remuxRapido = (rutaEntrada, rutaSalida) => {
+    return new Promise((resolve, reject) => {
+        ffmpeg(rutaEntrada)
+            .outputOptions([
+                '-c copy',
+                '-movflags +faststart'
+            ])
+            .format('mp4')
+            .on('error', reject)
+            .on('end', resolve)
+            .save(rutaSalida)
+    })
+}
+
+const recodificarRapido = (rutaEntrada, rutaSalida) => {
     return new Promise((resolve, reject) => {
         ffmpeg(rutaEntrada)
             .videoCodec('libx264')
             .outputOptions([
-                '-preset veryfast',
+                '-preset ultrafast',
                 '-profile:v main',
                 '-level 4.0',
                 '-pix_fmt yuv420p',
-                '-crf 23',
+                '-crf 26',
                 '-movflags +faststart',
-                '-max_muxing_queue_size 1024',
-                '-fflags +genpts',
-                '-vsync 2'
+                '-threads 0',
+                '-max_muxing_queue_size 1024'
             ])
             .audioCodec('aac')
             .audioBitrate('128k')
@@ -550,38 +555,24 @@ const recodificarSiempre = (rutaEntrada, rutaSalida) => {
     })
 }
 
-const recodificarSinAudioProblema = (rutaEntrada, rutaSalida) => {
+const recodificarSinAudio = (rutaEntrada, rutaSalida) => {
     return new Promise((resolve, reject) => {
         ffmpeg(rutaEntrada)
             .videoCodec('libx264')
             .outputOptions([
-                '-preset veryfast',
+                '-preset ultrafast',
                 '-profile:v main',
                 '-level 4.0',
                 '-pix_fmt yuv420p',
-                '-crf 23',
+                '-crf 26',
                 '-movflags +faststart',
-                '-max_muxing_queue_size 1024'
+                '-threads 0'
             ])
             .noAudio()
             .format('mp4')
             .on('error', reject)
             .on('end', resolve)
             .save(rutaSalida)
-    })
-}
-
-const generarMiniatura = (rutaVideo, carpetaTemp, nombreArchivo) => {
-    return new Promise((resolve, reject) => {
-        ffmpeg(rutaVideo)
-            .on('error', reject)
-            .on('end', resolve)
-            .screenshots({
-                timestamps: ['1'],
-                filename: nombreArchivo,
-                folder: carpetaTemp,
-                size: '320x?'
-            })
     })
 }
 
@@ -612,23 +603,16 @@ const procesarVideoConFfmpeg = async (
             `ytv-out-${idUnico}.mp4`
         )
 
-    const nombreMiniatura =
-        `ytv-thumb-${idUnico}.jpg`
-
-    const rutaMiniatura =
-        path.join(
-            carpetaTemp,
-            nombreMiniatura
-        )
-
     try {
         await fs.writeFile(
             rutaEntrada,
             bufferOrigen
         )
 
+        let quedoValido = false
+
         try {
-            await recodificarSiempre(
+            await remuxRapido(
                 rutaEntrada,
                 rutaSalida
             )
@@ -637,19 +621,41 @@ const procesarVideoConFfmpeg = async (
                 rutaSalida
             )
 
+            quedoValido = true
+
         } catch {
+            quedoValido = false
+        }
+
+        if (!quedoValido) {
             await limpiarArchivo(
                 rutaSalida
             )
 
-            await recodificarSinAudioProblema(
-                rutaEntrada,
-                rutaSalida
-            )
+            try {
+                await recodificarRapido(
+                    rutaEntrada,
+                    rutaSalida
+                )
 
-            await validarVideoJugable(
-                rutaSalida
-            )
+                await validarVideoJugable(
+                    rutaSalida
+                )
+
+            } catch {
+                await limpiarArchivo(
+                    rutaSalida
+                )
+
+                await recodificarSinAudio(
+                    rutaEntrada,
+                    rutaSalida
+                )
+
+                await validarVideoJugable(
+                    rutaSalida
+                )
+            }
         }
 
         const bufferFinal =
@@ -657,27 +663,7 @@ const procesarVideoConFfmpeg = async (
                 rutaSalida
             )
 
-        let miniatura = null
-
-        try {
-            await generarMiniatura(
-                rutaSalida,
-                carpetaTemp,
-                nombreMiniatura
-            )
-
-            miniatura =
-                await fs.readFile(
-                    rutaMiniatura
-                )
-        } catch {
-            miniatura = null
-        }
-
-        return {
-            buffer: bufferFinal,
-            miniatura
-        }
+        return bufferFinal
 
     } finally {
         await limpiarArchivo(
@@ -686,10 +672,6 @@ const procesarVideoConFfmpeg = async (
 
         await limpiarArchivo(
             rutaSalida
-        )
-
-        await limpiarArchivo(
-            rutaMiniatura
         )
     }
 }
@@ -970,18 +952,21 @@ const procesarYEnviar = async (
                 duracionFinal
             )
 
+        const thumbnail =
+            info.thumbnail ||
+            resultadoBusqueda?.thumbnail ||
+            null
+
         const bufferOrigen =
             await descargarABuffer(
                 info.download_url
             )
 
-        const {
-            buffer,
-            miniatura
-        } = await procesarVideoConFfmpeg(
-            bufferOrigen,
-            info.format
-        )
+        const buffer =
+            await procesarVideoConFfmpeg(
+                bufferOrigen,
+                info.format
+            )
 
         const pesoMb =
             (
@@ -1026,7 +1011,7 @@ const procesarYEnviar = async (
                 pesoMb,
                 info.quality ||
                     'Desconocida',
-                'MP4 (H.264/AAC)',
+                'MP4',
                 tiempoTotal
             )
 
@@ -1048,9 +1033,12 @@ const procesarYEnviar = async (
                     `${caption}\n\n${SIMBOLO_NOTA} ${piePagina}`,
                 fileName:
                     `${titulo}.mp4`,
+                jpegThumbnail:
+                    undefined,
                 thumbnail:
-                    miniatura ||
-                    undefined
+                    thumbnail
+                        ? { url: thumbnail }
+                        : undefined
             },
             {
                 quoted: m
