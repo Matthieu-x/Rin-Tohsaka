@@ -30,7 +30,7 @@ export async function handler(chatUpdate) {
 
     let prefixRegex = global.prefix;
     let usedPrefix = global.prefix || ""; // Valor predeterminado para usedPrefix
-    const senderNumber = this.user.jid.split('@')[0];
+    const senderNumber = this.jid.split('@')[0];
     if (!prefixCache.has(senderNumber)) {
         const botPath = path.join('./Sessions/SubBot', senderNumber);
         const configPath = path.join(botPath, 'config.json');
@@ -104,7 +104,7 @@ export async function handler(chatUpdate) {
         return
     }
  }
-    const settings = global.db.data.settings[this.user.jid] || (global.db.data.settings[this.user.jid] = {
+    const settings = global.db.data.settings[this.jid] || (global.db.data.settings[this.jid] = {
         self: false,
         restrict: true,
         jadibotmd: true,
@@ -132,10 +132,10 @@ export async function handler(chatUpdate) {
     if (opts["swonly"] && m.chat !== "status@broadcast") return;
     if (m.isBaileys) return;
 
-    if (chat.primaryBot && chat.primaryBot !== this.user.jid && !m.text.startsWith((prefixRegex.source || '.') + 'delprimary')) {
+    if (chat.primaryBot && chat.primaryBot !== this.jid && !m.text.startsWith((prefixRegex.source || '.') + 'delprimary')) {
         const participants = m.isGroup ? (await this.groupMetadata(m.chat).catch(() => ({ participants: [] }))).participants : [];
         const primaryBotInGroup = participants.some(p => p.jid === chat.primaryBot);
-        const primaryBotConn = global.conns.find(conn => conn.user.jid === chat.primaryBot && conn.ws.socket?.readyState !== ws.CLOSED);
+        const primaryBotConn = global.conns.find(conn => conn.jid === chat.primaryBot && conn.ws.socket?.readyState !== ws.CLOSED);
         if (primaryBotConn && primaryBotInGroup) return;
         chat.primaryBot = null;
     }
@@ -162,7 +162,7 @@ export async function handler(chatUpdate) {
         }) || {};
     };
     const userGroup = findParticipant(m.sender);
-    const botGroup = findParticipant(this.user.jid);
+    const botGroup = findParticipant(this.jid);
     const isRAdmin = userGroup?.admin === "superadmin";
     const isAdmin = isRAdmin || userGroup?.admin === "admin";
     const isBotAdmin = botGroup?.admin;
@@ -231,14 +231,14 @@ export async function handler(chatUpdate) {
         global.comando = command;
 
         if (chat.isBanned && !isMods && name !== "group-banchat.js") {
-            if (!chat.primaryBot || chat.primaryBot === this.user.jid) {
+            if (!chat.primaryBot || chat.primaryBot === this.jid) {
                 await this.reply(m.chat, `ꕥ El bot *${settings.botname}* está desactivado en este grupo\n\n> ✦ Un *administrador* puede activarlo con el comando:\n> » *${usedPrefix}bot on*`, m);
                 return;
             }
         }
 
         if (user.banned && !isMods && m.text) {
-            if (!chat.primaryBot || chat.primaryBot === this.user.jid) {
+            if (!chat.primaryBot || chat.primaryBot === this.jid) {
                 await this.reply(m.chat, `ꕥ Estas baneado/a, no puedes usar comandos en este bot!\n\n> ● *Razón ›* ${user.bannedReason}\n\n> ● Si este Bot es cuenta oficial y tienes evidencia que respalde que este mensaje es un error, puedes exponer tu caso con un moderador.`, m);
                 return;
             }
