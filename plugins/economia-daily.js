@@ -34,6 +34,6 @@ handler.help = ['daily']
 handler.tags = ['economia']
 handler.command = ['daily', 'diario']
 
-handler.description = 'Reclamá tu recompensa diaria (cada 24hs)'
+handler.description = 'Reclamá tu recompensa diaria'
 
 export default handler
