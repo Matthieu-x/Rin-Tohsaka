@@ -83,7 +83,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['depositar <monto/todo>']
 handler.tags = ['economia']
-handler.command = ['depositar', 'deposit']
+handler.command = ['depositar', 'deposit', 'dep']
 
 handler.description = 'Guardá dinero en el banco (protegido de robos)'
 
