@@ -23,8 +23,9 @@ const handler = async (m, { conn, groupMetadata }) => {
 
 handler.help = ['formarpareja']
 handler.tags = ['fun']
-handler.command = ['formarpareja', 'formarparejas']
+handler.command = ['formarpareja', 'formarparejas', 'parejas']
 handler.group = true
 handler.register = true
+handler.description = 'casate con alguien'
 
 export default handler
