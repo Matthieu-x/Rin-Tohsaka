@@ -27,13 +27,6 @@
 <sub>@Edward-oficial</sub>
 </td>
 <td align="center">
-<a href="https://github.com/BrayanRK">
-<img src="https://github.com/BrayanRK.png" width="120" style="border-radius:50%" alt="BrayanRK" /><br />
-<b>BrayanRK</b>
-</a>
-<br />
-<sub>@BrayanRK</sub>
-</td>
 </tr>
 </table>
 
