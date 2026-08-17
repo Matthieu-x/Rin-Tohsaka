@@ -2,8 +2,6 @@ import fs from 'fs'
 import { join } from 'path'
 import { obtenerSubbotsActivos } from './subs-conexion.js'
 
-const SIMBOLO = 'ꕥ'
-
 const runtime = (segundos) => {
   segundos = Number(segundos)
 
@@ -30,6 +28,15 @@ const leerConfig = (rutaCarpeta) => {
   }
 }
 
+// Ajustá esto si tu bot guarda el premium en otro lado (ej: una db propia, JSON, etc)
+const esPremium = (numero) => {
+  if (!numero || numero === 'Desconocido') return false
+
+  const jid = `${numero}@s.whatsapp.net`
+
+  return Boolean(global.db?.data?.users?.[jid]?.premium)
+}
+
 const handler = async (m, { conn, usedPrefix }) => {
   const senderNumber = m.sender.split('@')[0]
 
@@ -43,11 +50,14 @@ const handler = async (m, { conn, usedPrefix }) => {
   const listaConDatos = activos
     .map((activo) => {
       const config = leerConfig(activo.path)
+      const creadoPor = config?.creadoPor || null
+
       return {
         numero: activo.numero || config?.numero || 'Desconocido',
         conectado: activo.conectado,
-        creadoPor: config?.creadoPor || null,
-        creadoEn: config?.creadoEn || null
+        creadoPor,
+        creadoEn: config?.creadoEn || null,
+        premium: esPremium(creadoPor)
       }
     })
     .filter((sub) => esOwner || sub.creadoPor === senderNumber)
@@ -55,29 +65,42 @@ const handler = async (m, { conn, usedPrefix }) => {
   if (listaConDatos.length === 0) {
     await conn.reply(
       m.chat,
-      `${SIMBOLO} *Sin subbots activos*\n\n> ${esOwner ? 'No hay ningun subbot conectado en este momento' : 'No tienes ningun subbot conectado en este momento'}\n> Usa *${usedPrefix}serbot <numero>* para crear uno`,
+      `ꕥ *Sin subbots activos*\n\n` +
+      `〄 *Detalles*\n` +
+      `> ${esOwner ? 'No hay ningún subbot conectado en este momento' : 'No tenés ningún subbot conectado en este momento'}\n\n` +
+      `✐ *Sugerencia*\n` +
+      `> Usá *${usedPrefix}serbot <número>* para crear uno`,
       m
     )
     return
   }
 
-  let texto = `${SIMBOLO} *Subbots activos*\n\n`
+  let texto = `ꕥ *Subbots activos*\n\n`
 
   listaConDatos.forEach((sub, i) => {
-    const estado = sub.conectado ? 'Conectado' : 'Conectando'
+    const estado = sub.conectado ?  Conectado' : 'Conectando'
+    const plan = sub.premium ? ' Premium' : 'Normal'
     const tiempoActivo = sub.creadoEn ? runtime((Date.now() - sub.creadoEn) / 1000) : 'Desconocido'
 
-    texto += `╭─❑ SUBBOT ${i + 1} ❑\n`
-    texto += `│ Numero: ${sub.numero}\n`
-    texto += `│ Estado: ${estado}\n`
+    texto += `〄 *Subbot ${i + 1}*\n`
+    texto += `> Número: ${sub.numero}\n`
+    texto += `> Estado: ${estado}\n`
+    texto += `> Plan: ${plan}\n`
+
     if (esOwner) {
-      texto += `│ Creado por: ${sub.creadoPor || 'Desconocido'}\n`
+      texto += `> Creado por: ${sub.creadoPor || 'Desconocido'}\n`
     }
-    texto += `│ Activo desde: ${tiempoActivo}\n`
-    texto += `╰────────────────\n`
+
+    texto += `> Activo desde: ${tiempoActivo}\n`
+
+    if (i < listaConDatos.length - 1) {
+      texto += `\n`
+    }
   })
 
-  texto += `\n> Total: ${listaConDatos.length} subbot${listaConDatos.length === 1 ? '' : 's'}`
+  texto +=
+    `\n\n✰ *Total*\n` +
+    `> ${listaConDatos.length} subbot${listaConDatos.length === 1 ? '' : 's'}`
 
   await conn.reply(m.chat, texto, m)
 }
