@@ -24,10 +24,10 @@ const handler = async (m, { conn, isAdmin, isOwner }) => {
   try {
     const mensaje = m.quoted
 
-    if (mensaje.key.remoteJid !== m.chat) {
+    if (!mensaje?.key) {
       await conn.reply(
         m.chat,
-        `${SIMBOLO} *No se pudo eliminar*\n\n> El mensaje no pertenece a este grupo`,
+        `${SIMBOLO} *No se pudo eliminar*\n\n> No se encontró la información del mensaje`,
         m
       )
       return
@@ -51,7 +51,7 @@ const handler = async (m, { conn, isAdmin, isOwner }) => {
 handler.help = ['delete']
 handler.tags = ['group']
 handler.command = ['delete', 'del', 'borrar']
-handler.description = 'Elimina un mensaje del bot respondiendo a ese mensaje'
+handler.description = 'Elimina un mensaje respondiendo a ese mensaje'
 handler.group = true
 handler.botAdmin = true
 
