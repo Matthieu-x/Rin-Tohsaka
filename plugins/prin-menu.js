@@ -1,4 +1,3 @@
-import moment from 'moment-timezone'
 import os from 'os'
 import fs from 'fs'
 import path from 'path'
@@ -12,71 +11,48 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const RUTA_FOTO_MENU = path.join(__dirname, '../media/rin.jpeg')
 
-const PAISES_SOPORTADOS = [
-  { prefijo: '504', nombre: 'Honduras', zona: 'America/Tegucigalpa' },
-  { prefijo: '502', nombre: 'Guatemala', zona: 'America/Guatemala' },
-  { prefijo: '503', nombre: 'El Salvador', zona: 'America/El_Salvador' },
-  { prefijo: '505', nombre: 'Nicaragua', zona: 'America/Managua' },
-  { prefijo: '506', nombre: 'Costa Rica', zona: 'America/Costa_Rica' },
-  { prefijo: '507', nombre: 'Panama', zona: 'America/Panama' },
-  { prefijo: '593', nombre: 'Ecuador', zona: 'America/Guayaquil' },
-  { prefijo: '591', nombre: 'Bolivia', zona: 'America/La_Paz' },
-  { prefijo: '595', nombre: 'Paraguay', zona: 'America/Asuncion' },
-  { prefijo: '598', nombre: 'Uruguay', zona: 'America/Montevideo' },
-  { prefijo: '1809', nombre: 'Republica Dominicana', zona: 'America/Santo_Domingo' },
-  { prefijo: '1829', nombre: 'Republica Dominicana', zona: 'America/Santo_Domingo' },
-  { prefijo: '1849', nombre: 'Republica Dominicana', zona: 'America/Santo_Domingo' },
-  { prefijo: '51', nombre: 'Peru', zona: 'America/Lima' },
-  { prefijo: '52', nombre: 'Mexico', zona: 'America/Mexico_City' },
-  { prefijo: '53', nombre: 'Cuba', zona: 'America/Havana' },
-  { prefijo: '54', nombre: 'Argentina', zona: 'America/Argentina/Buenos_Aires' },
-  { prefijo: '55', nombre: 'Brasil', zona: 'America/Sao_Paulo' },
-  { prefijo: '56', nombre: 'Chile', zona: 'America/Santiago' },
-  { prefijo: '57', nombre: 'Colombia', zona: 'America/Bogota' },
-  { prefijo: '58', nombre: 'Venezuela', zona: 'America/Caracas' },
-  { prefijo: '34', nombre: 'España', zona: 'Europe/Madrid' },
-  { prefijo: '1', nombre: 'Estados Unidos', zona: 'America/New_York' }
-]
+const CANAL_JID = '120363410031000704@newsletter'
 
-const ZONA_POR_DEFECTO = 'America/Tegucigalpa'
-
-const obtenerPaisPorNumero = (numero) => {
-  const soloDigitos = String(numero || '').replace(/\D/g, '')
-
-  const coincidencia = PAISES_SOPORTADOS
-    .slice()
-    .sort((a, b) => b.prefijo.length - a.prefijo.length)
-    .find((pais) => soloDigitos.startsWith(pais.prefijo))
-
-  if (coincidencia) return coincidencia
-
-  return {
-    nombre: 'No identificado',
-    zona: ZONA_POR_DEFECTO
-  }
-}
 const obtenerTipoBot = (conn) => {
   if (!conn.isSubBot) {
-    return { etiqueta: 'Principal', esSubbot: false, esPremium: false }
+    return {
+      etiqueta: 'Principal',
+      esSubbot: false,
+      esPremium: false
+    }
   }
 
   const numeroBot = conn.user?.jid?.split('@')[0]
-  const rutaConfig = path.join('./Sessions/SubBot', numeroBot || '', 'config.json')
+  const rutaConfig = path.join(
+    './Sessions/SubBot',
+    numeroBot || '',
+    'config.json'
+  )
 
   let creadoPor = null
+
   try {
     if (fs.existsSync(rutaConfig)) {
-      const config = JSON.parse(fs.readFileSync(rutaConfig))
+      const config = JSON.parse(
+        fs.readFileSync(rutaConfig)
+      )
+
       creadoPor = config?.creadoPor || null
     }
   } catch (e) {}
 
   const esPremium = creadoPor
-    ? Boolean(global.db?.data?.users?.[`${creadoPor}@s.whatsapp.net`]?.premium)
+    ? Boolean(
+        global.db?.data?.users?.[
+          `${creadoPor}@s.whatsapp.net`
+        ]?.premium
+      )
     : false
 
   return {
-    etiqueta: esPremium ? 'Subbot Premium' : 'Subbot Normal',
+    etiqueta: esPremium
+      ? 'Subbot Premium'
+      : 'Subbot Normal',
     esSubbot: true,
     esPremium
   }
@@ -85,28 +61,53 @@ const obtenerTipoBot = (conn) => {
 const runtime = (segundos) => {
   segundos = Number(segundos)
 
-  const d = Math.floor(segundos / (3600 * 24))
-  const h = Math.floor((segundos % (3600 * 24)) / 3600)
-  const m = Math.floor((segundos % 3600) / 60)
-  const s = Math.floor(segundos % 60)
+  const d = Math.floor(
+    segundos / (3600 * 24)
+  )
+
+  const h = Math.floor(
+    (segundos % (3600 * 24)) / 3600
+  )
+
+  const m = Math.floor(
+    (segundos % 3600) / 60
+  )
+
+  const s = Math.floor(
+    segundos % 60
+  )
 
   const dDisplay =
-    d > 0 ? d + (d === 1 ? ' dia, ' : ' dias, ') : ''
+    d > 0
+      ? d + (d === 1 ? ' dia, ' : ' dias, ')
+      : ''
 
   const hDisplay =
-    h > 0 ? h + (h === 1 ? ' hora, ' : ' horas, ') : ''
+    h > 0
+      ? h + (h === 1 ? ' hora, ' : ' horas, ')
+      : ''
 
   const mDisplay =
-    m > 0 ? m + (m === 1 ? ' minuto, ' : ' minutos, ') : ''
+    m > 0
+      ? m + (m === 1 ? ' minuto, ' : ' minutos, ')
+      : ''
 
   const sDisplay =
-    s > 0 ? s + (s === 1 ? ' segundo' : ' segundos') : ''
+    s > 0
+      ? s + (s === 1 ? ' segundo' : ' segundos')
+      : ''
 
-  return dDisplay + hDisplay + mDisplay + sDisplay
+  return (
+    dDisplay +
+    hDisplay +
+    mDisplay +
+    sDisplay
+  )
 }
 
 const capitalizar = (texto) =>
-  texto.charAt(0).toUpperCase() + texto.slice(1)
+  texto.charAt(0).toUpperCase() +
+  texto.slice(1)
 
 const ordenTags = [
   'main',
@@ -188,7 +189,8 @@ const construirBloqueCategoria = (
   usedPrefix
 ) => {
   const nombreVisible =
-    nombreTags[tag] || capitalizar(tag)
+    nombreTags[tag] ||
+    capitalizar(tag)
 
   let bloque =
     `\n╭─❑ ${nombreVisible.toUpperCase()} ❑\n`
@@ -202,12 +204,13 @@ const construirBloqueCategoria = (
     const aliasesVisibles =
       aliases.slice(0, 3)
 
-    const linea = aliasesVisibles
-      .map(
-        (alias) =>
-          `${usedPrefix}${alias}`
-      )
-      .join(' , ')
+    const linea =
+      aliasesVisibles
+        .map(
+          (alias) =>
+            `${usedPrefix}${alias}`
+        )
+        .join(' , ')
 
     bloque += `│ ${linea}\n`
 
@@ -243,11 +246,19 @@ const agruparPluginsPorTag = (
       continue
     }
 
-    if (plugin.owner && !esOwner)
+    if (
+      plugin.owner &&
+      !esOwner
+    ) {
       continue
+    }
 
-    if (plugin.rowner && !esOwner)
+    if (
+      plugin.rowner &&
+      !esOwner
+    ) {
       continue
+    }
 
     let tags =
       plugin.tags ||
@@ -266,9 +277,9 @@ const agruparPluginsPorTag = (
         agrupado[tagNormalizado] = []
       }
 
-      agrupado[tagNormalizado].push(
-        plugin
-      )
+      agrupado[
+        tagNormalizado
+      ].push(plugin)
     }
   }
 
@@ -278,7 +289,8 @@ const agruparPluginsPorTag = (
 const ordenarTagsDisponibles = (
   agrupado
 ) => {
-  const claves = Object.keys(agrupado)
+  const claves =
+    Object.keys(agrupado)
 
   claves.sort((a, b) => {
     const indexA =
@@ -288,10 +300,14 @@ const ordenarTagsDisponibles = (
       ordenTags.indexOf(b)
 
     const valorA =
-      indexA === -1 ? 999 : indexA
+      indexA === -1
+        ? 999
+        : indexA
 
     const valorB =
-      indexB === -1 ? 999 : indexB
+      indexB === -1
+        ? 999
+        : indexB
 
     if (valorA === valorB) {
       return a.localeCompare(b)
@@ -308,12 +324,16 @@ const handler = async (
   { conn, usedPrefix }
 ) => {
   const settingsConn =
-    (global.db &&
+    (
+      global.db &&
       global.db.data &&
       global.db.data.settings &&
-      conn.user &&
-      global.db.data.settings[conn.user.jid]) ||
-    {}
+      conn.user
+    )
+      ? global.db.data.settings[
+          conn.user.jid
+        ] || {}
+      : {}
 
   const nombreBot =
     obtenerNombreIdentidad(conn) ||
@@ -357,37 +377,19 @@ const handler = async (
       ? Object.values(
           global.db.data.users
         ).filter(
-          (u) => u && u.premium
+          (u) =>
+            u &&
+            u.premium
         ).length
       : 0
 
   const uptimeTexto =
-    runtime(process.uptime())
-
-  const pais =
-    obtenerPaisPorNumero(
-      m.sender.split('@')[0]
+    runtime(
+      process.uptime()
     )
 
-  const tipoBot = obtenerTipoBot(conn)
-
-  const fecha =
-    moment
-      .tz(pais.zona)
-      .format('DD/MM/YYYY')
-
-  const hora =
-    moment
-      .tz(pais.zona)
-      .format('HH:mm:ss')
-
-  const dia =
-    capitalizar(
-      moment
-        .tz(pais.zona)
-        .locale('es')
-        .format('dddd')
-    )
+  const tipoBot =
+    obtenerTipoBot(conn)
 
   const totalPlugins =
     global.plugins
@@ -420,12 +422,6 @@ const handler = async (
     `┏━❑ ${nombreBot} ❑━┓\n`
 
   encabezado +=
-    `┃ *Dia*       : _${dia}_\n`
-
-  encabezado +=
-    `┃ *Pais*      : _${pais.nombre}_\n`
-
-  encabezado +=
     `┃ *Tipo*      : _${tipoBot.etiqueta}_\n`
 
   encabezado +=
@@ -436,12 +432,6 @@ const handler = async (
 
   encabezado +=
     `┃ *Uptime*    : _${uptimeTexto}_\n`
-
-  encabezado +=
-    `┃ *Fecha*     : _${fecha}_\n`
-
-  encabezado +=
-    `┃ *Hora*      : _${hora}_\n`
 
   encabezado +=
     `┃ *Grupos*    : _${totalGrupos}_\n`
@@ -515,9 +505,13 @@ const handler = async (
 
   try {
     const rutaFotoPersonalizada =
-      obtenerRutaFotoIdentidad(conn)
+      obtenerRutaFotoIdentidad(
+        conn
+      )
 
-    if (rutaFotoPersonalizada) {
+    if (
+      rutaFotoPersonalizada
+    ) {
       mediaBuffer =
         fs.readFileSync(
           rutaFotoPersonalizada
@@ -536,19 +530,26 @@ const handler = async (
     mediaBuffer = null
   }
 
+  const contextInfo = {
+    mentionedJid: [
+      m.sender
+    ],
+    forwardingScore: 999,
+    isForwarded: true,
+    forwardedNewsletterMessageInfo: {
+      newsletterJid: CANAL_JID,
+      newsletterName: Rin-Tohsaka,
+      serverMessageId: -1
+    }
+  }
+
   if (mediaBuffer) {
     await conn.sendMessage(
       m.chat,
       {
         image: mediaBuffer,
         caption: textoFinal,
-        contextInfo: {
-          mentionedJid: [
-            m.sender
-          ],
-          forwardingScore: 999,
-          isForwarded: true
-        }
+        contextInfo
       },
       {
         quoted: m
@@ -559,6 +560,7 @@ const handler = async (
       m.chat,
       {
         text: textoFinal,
+        contextInfo,
         mentions: [
           m.sender
         ]
@@ -570,8 +572,14 @@ const handler = async (
   }
 }
 
-handler.help = ['menu']
-handler.tags = ['main']
+handler.help = [
+  'menu'
+]
+
+handler.tags = [
+  'main'
+]
+
 handler.command = [
   'menu',
   'help',
