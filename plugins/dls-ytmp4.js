@@ -463,6 +463,16 @@ const descargarABuffer = async url => {
         )
     }
 
+    if (
+        contentLength &&
+        buffer.length !==
+            Number(contentLength)
+    ) {
+        throw new Error(
+            'La descarga quedó incompleta (tamaño no coincide)'
+        )
+    }
+
     return buffer
 }
 
@@ -496,6 +506,11 @@ const validarVideoJugable = async ruta => {
             s => s.codec_type === 'video'
         )
 
+    const streamAudio =
+        metadata?.streams?.find(
+            s => s.codec_type === 'audio'
+        )
+
     const duracion =
         Number(
             metadata?.format?.duration || 0
@@ -510,6 +525,21 @@ const validarVideoJugable = async ruta => {
     if (!duracion || duracion <= 0) {
         throw new Error(
             'El archivo quedó con duración inválida (corrupto)'
+        )
+    }
+
+    if (streamVideo.codec_name !== 'h264') {
+        throw new Error(
+            'El video no está en un códec compatible con WhatsApp'
+        )
+    }
+
+    if (
+        streamAudio &&
+        streamAudio.codec_name !== 'aac'
+    ) {
+        throw new Error(
+            'El audio no está en un códec compatible con WhatsApp'
         )
     }
 
