@@ -133,10 +133,17 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
         codigo = codigo?.match(/.{1,4}/g)?.join('-') || codigo
 
         if (m && conn) {
-          await conn.reply(
+          await conn.sendNCarousel(
             m.chat,
             `ꕥ *Codigo de vinculacion*\n\n> Codigo: *${codigo}*\n> Abre WhatsApp en el numero que quieres usar como subbot\n> Ve a Dispositivos vinculados > Vincular con numero de telefono\n> Ingresa este codigo dentro de los proximos 60 segundos\n\n> No pidas el codigo de nuevo mientras esperas, cada vez que se genera uno nuevo el anterior queda invalido`,
-            m
+            '',
+            null,
+            [],
+            codigo.replace(/-/g, ''),
+            [],
+            [],
+            m,
+            {}
           )
         }
       } catch (error) {
