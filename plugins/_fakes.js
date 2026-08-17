@@ -17,13 +17,13 @@ handler.all = async function (m) {
   if (!m?.sender) return
 
   global.canalIdM = [
-    "120363418111976564@newsletter",
-    "120363418111976564@newsletter"
+    "120363410031000704@newsletter",
+    "120363410031000704@newsletter"
   ]
 
   global.canalNombreM = [
     "Support Rin",
-    "Rin 𝗖𝗛𝗡𝗟︎"
+    "Rin-Tohsaka"
   ]
 
   global.channelRD = await getRandomChannel()
