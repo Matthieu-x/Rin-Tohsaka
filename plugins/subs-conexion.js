@@ -153,6 +153,9 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
       codigosSolicitados.delete(pathMichiJadiBot)
       const numero = jidNormalizedUser(sub.user.id).split('@')[0]
 
+      global.conns = global.conns || []
+      if (!global.conns.includes(sub)) global.conns.push(sub)
+
       sub.groupFetchAllParticipating().then((grupos) => {
         for (const jid of Object.keys(grupos)) {
           cacheMetadataGruposSub.set(jid, grupos[jid])
@@ -199,6 +202,7 @@ export async function MichiJadiBot({ pathMichiJadiBot, m, conn, args, usedPrefix
       const reinicioRequerido = codigoError === DisconnectReason.restartRequired
 
       conexionesActivas.delete(pathMichiJadiBot)
+      if (global.conns) global.conns = global.conns.filter(c => c !== sub)
 
       if (cerroSesion) {
         codigosSolicitados.delete(pathMichiJadiBot)
