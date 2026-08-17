@@ -20,7 +20,7 @@
 <tr>
 <td align="center">
 <a href="https://github.com/Edward-oficial">
-<img src="https://github.com/Edward-oficial.png" width="120" style="border-radius:0%" alt="Duan" /><br />
+<img src="https://github.com/Edward-oficial.png" width="100" style="border-radius:50%" alt="Duan" /><br />
 <b>Duan</b>
 </a>
 <br />
