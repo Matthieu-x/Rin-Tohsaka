@@ -57,8 +57,7 @@ const handler = async (m, { conn }) => {
 
 handler.help = ['trabajar']
 handler.tags = ['economia']
-handler.command = ['trabajar', 'work']
+handler.command = ['trabajar', 'work', 'laburar']
 
-handler.description = 'Trabajá para ganar dinero (cooldown de 30 min)'
-
+handler.description = 'Trabajá para ganar dinero'
 export default handler
