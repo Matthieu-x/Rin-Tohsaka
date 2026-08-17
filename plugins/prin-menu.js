@@ -54,7 +54,7 @@ const ordenTags = [
   'nsfw',
   'owner',
   'serbot',
-  'personalizacion'
+  'economia'
 ]
 
 const nombreTags = {
@@ -73,7 +73,7 @@ const nombreTags = {
   nsfw: 'NSFW',
   owner: 'Owner',
   serbot: 'Subbots',
-  personalizacion: 'Personalización'
+  economia: 'Economia'
 }
 
 const obtenerAliasesComando = (plugin) => {
