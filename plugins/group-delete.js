@@ -29,5 +29,5 @@ handler.command = ['del', 'delete', 'borrar']
 handler.group = true
 handler.admin = true
 handler.botAdmin = true
-
+handler.description = 'Borrar mensajes'
 export default handler
