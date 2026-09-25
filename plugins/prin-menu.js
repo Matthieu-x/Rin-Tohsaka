@@ -605,16 +605,6 @@ const handler = async (
         'Canal Oficial',
 
       serverMessageId: 143
-    },
-
-    externalAdReply: {
-      title: nombreBot,
-      body: 'AI Assistant',
-      thumbnailUrl: URL_FOTO_MENU,
-      sourceUrl: API_URL,
-      mediaType: 1,
-      renderLargerThumbnail: false,
-      showAdAttribution: false
     }
   }
 
