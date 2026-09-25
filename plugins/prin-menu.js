@@ -458,84 +458,59 @@ const handler = async (
     m.sender.split('@')[0]
 
   // ===================================================
-  // DECORACIÓN DEBAJO DE LA FOTO
+  // DECORACIÓN DEBAJO DE LA FOTO (link con auto-preview gris)
   // ===================================================
 
   const presentacion =
-    ` ${API_URL}\n` +
-    `✐ ${nombreBot} • AI Assistant\n` +
-    `✐ Powered by | ${CREADOR}\n\n`
+    `${API_URL}\n\n`
 
   // ===================================================
-  // SALUDO ORIGINAL
+  // SALUDO
   // ===================================================
 
   const saludoMencion =
-    `> Hola *${mention}* soy *${nombreBot}*, tu asistente virtual\n\n`
+    `Hola *${mention}* soy *${nombreBot}*, tu asistente virtual\n` +
+    `Aquí tienes el menú de mis comandos.\n\n`
 
   // ===================================================
-  // ENCABEZADO ORIGINAL
+  // ENCABEZADO (lista plana estilo Alya, sin cajas)
   // ===================================================
 
   let encabezado =
-    `┏━❑ ${nombreBot} ❑━┓\n`
+    `— *BOT* › ${nombreBot}\n`
 
   encabezado +=
-    `┃ *Dia*       : _${dia}_\n`
+    `— *API* › ${API_URL}\n`
 
   encabezado +=
-    `┃ *Tipo*      : _${tipoBot.etiqueta}_\n`
+    `— *TIPO* › ${tipoBot.etiqueta}\n`
 
   encabezado +=
-    `┃ *Estado*    : _${modo}_\n`
+    `— *ESTADO* › ${modo}\n`
 
   encabezado +=
-    `┃ *Version*   : _${version}_\n`
+    `— *VERSION* › ${version}\n`
 
   encabezado +=
-    `┃ *Uptime*    : _${uptimeTexto}_\n`
+    `— *UPTIME* › ${uptimeTexto}\n`
 
   encabezado +=
-    `┃ *Fecha*     : _${fecha}_\n`
+    `— *DIA* › ${dia}\n`
 
   encabezado +=
-    `┃ *Hora*      : _${hora}_\n`
+    `— *FECHA* › ${fecha}\n`
 
   encabezado +=
-    `┃ *Grupos*    : _${totalGrupos}_\n`
+    `— *HORA* › ${hora}\n`
 
   encabezado +=
-    `┃ *Premium*   : _${totalPremium}_\n`
+    `— *GRUPOS* › ${totalGrupos}\n`
 
   encabezado +=
-    `┃ *Comandos*  : _${totalPlugins}_\n`
+    `— *PREMIUM* › ${totalPremium}\n`
 
   encabezado +=
-    `┗━━━━━━━━━━━━━━┛\n`
-
-  // ===================================================
-  // INFORMACIÓN DE API
-  // ===================================================
-
-  let informacionApi = ''
-
-  informacionApi +=
-    `\n╭─❑ API & SERVICIOS ❑\n`
-
-  informacionApi +=
-    `│ *API*     : _${API_URL}_\n`
-
-  informacionApi +=
-    `│ *Creador* : _${CREADOR}_\n`
-
-  informacionApi +=
-    `│ *Host*    : _${HOST_URL}_\n`
-
-  informacionApi +=
-    `│ *Info*    : _API del mismo creador_\n`
-
-  informacionApi +=
-    `╰────────────────\n`
+    `— *COMANDOS* › ${totalPlugins}\n\n`
 
   // ===================================================
   // COMANDOS
@@ -600,7 +575,6 @@ const handler = async (
     presentacion +
     saludoMencion +
     encabezado +
-    informacionApi +
     cuerpo
 
   // ===================================================
