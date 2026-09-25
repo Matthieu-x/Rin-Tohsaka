@@ -458,11 +458,11 @@ const handler = async (
     m.sender.split('@')[0]
 
   // ===================================================
-  // DECORACIÓN DEBAJO DE LA FOTO (link con auto-preview gris)
+  // DECORACIÓN DEBAJO DE LA FOTO (sin link de texto suelto,
+  // el link se muestra como tarjeta - ver contextInfo)
   // ===================================================
 
-  const presentacion =
-    `${API_URL}\n\n`
+  const presentacion = ''
 
   // ===================================================
   // SALUDO
@@ -605,6 +605,16 @@ const handler = async (
         'Canal Oficial',
 
       serverMessageId: 143
+    },
+
+    externalAdReply: {
+      title: nombreBot,
+      body: 'AI Assistant',
+      thumbnailUrl: URL_FOTO_MENU,
+      sourceUrl: API_URL,
+      mediaType: 1,
+      renderLargerThumbnail: false,
+      showAdAttribution: false
     }
   }
 
