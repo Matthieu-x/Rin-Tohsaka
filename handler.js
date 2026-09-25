@@ -78,6 +78,7 @@ export async function handler(chatUpdate) {
 
     const chat = global.db.data.chats[m.chat] || (global.db.data.chats[m.chat] = {
         isBanned: false,
+        botOff: false,
         welcome: true,
         sWelcome: "",
         sBye: "",
@@ -104,6 +105,15 @@ export async function handler(chatUpdate) {
         return
     }
  }
+
+    if (chat.botOff) {
+        const textLower = m.text?.toLowerCase() || ''
+        const prefixMatch = prefixRegex instanceof RegExp ? prefixRegex.exec(m.text || '') : null
+        const usedPrefixCheck = prefixMatch ? prefixMatch[0] : ''
+        const commandCheck = usedPrefixCheck ? textLower.slice(usedPrefixCheck.length).trim().split(' ')[0] : ''
+        if (commandCheck !== 'bot') return
+    }
+
     const settings = global.db.data.settings[this.jid] || (global.db.data.settings[this.jid] = {
         self: false,
         restrict: true,
