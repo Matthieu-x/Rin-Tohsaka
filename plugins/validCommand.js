@@ -1,3 +1,5 @@
+const SIMBOLO = 'ꕥ'
+
 export async function before(m, { groupMetadata }) {
 if (!m.text || !global.prefix.test(m.text)) return
 const usedPrefix = global.prefix.exec(m.text)[0]
@@ -22,5 +24,8 @@ if (chat.isBanned && !owner) return
 if (validCommand(command, global.plugins)) {
 } else {
 const comando = command
-await m.reply(`❐ Lo siento, el comando *_${comando}_* no existe.\n> Usa *${usedPrefix}help* para ver todos los comandos disponibles.`)
+let texto = `${SIMBOLO} *Comando no encontrado*\n\n`
+texto += `> El comando *${usedPrefix}${comando}* no existe\n`
+texto += `> Usa *${usedPrefix}help* para ver todos los comandos disponibles`
+await m.reply(texto)
 }}
