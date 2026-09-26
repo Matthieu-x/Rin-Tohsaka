@@ -119,21 +119,39 @@ const extraerStickersDelPack = async urlPack => {
 }
 
 /**
- * Convierte un buffer de imagen a WebP sticker con metadatos EXIF del pack.
- * 1. sharp convierte a WebP 512x512 limpio
- * 2. node-webpmux inyecta el pack y autor en el EXIF
+ * Detecta el tipo real de archivo a partir de los magic bytes.
+ * @returns {'webp-animado'|'webp'|'png'|'jpeg'|'gif'|'desconocido'}
  */
-const convertirASticker = async (buffer, packname, author) => {
-    // 1. Convertir con sharp a WebP estándar
-    const webpBuffer = await sharp(buffer, { animated: true })
-        .resize(512, 512, {
-            fit: 'contain',
-            background: { r: 0, g: 0, b: 0, alpha: 0 }
-        })
-        .webp({ quality: 90 })
-        .toBuffer()
+const detectarTipo = buffer => {
+    if (buffer.length < 12) return 'desconocido'
 
-    // 2. Inyectar metadatos EXIF con node-webpmux
+    const hex4 = buffer.slice(0, 4).toString('hex')
+    const hex8 = buffer.slice(0, 8).toString('hex')
+    const hex12 = buffer.slice(8, 12).toString('ascii')
+
+    // WebP: empieza con RIFF y tiene WEBP
+    if (hex4 === '52494646' && hex12 === 'WEBP') {
+        // Detectar si es animado buscando el chunk ANIM/ANMF
+        const tieneAnim = buffer.includes(Buffer.from('ANIM')) || buffer.includes(Buffer.from('ANMF'))
+        return tieneAnim ? 'webp-animado' : 'webp'
+    }
+
+    // PNG
+    if (hex8 === '89504e470d0a1a0a') return 'png'
+
+    // JPEG
+    if (hex4.startsWith('ffd8ff')) return 'jpeg'
+
+    // GIF
+    if (buffer.slice(0, 6).toString('ascii').startsWith('GIF')) return 'gif'
+
+    return 'desconocido'
+}
+
+/**
+ * Inyecta los metadatos EXIF en un WebP ya convertido.
+ */
+const inyectarExif = async (webpBuffer, packname, author) => {
     const img = new webpmux.Image()
     await img.load(webpBuffer)
 
@@ -157,6 +175,55 @@ const convertirASticker = async (buffer, packname, author) => {
     img.exif = exif
 
     return await img.save(null)
+}
+
+/**
+ * Convierte cualquier imagen a sticker WebP con metadatos del pack.
+ * Detecta el tipo real y aplica el pipeline correcto.
+ */
+const convertirASticker = async (bufferOriginal, packname, author) => {
+    const tipo = detectarTipo(bufferOriginal)
+
+    let webpBuffer
+
+    if (tipo === 'webp-animado' || tipo === 'webp') {
+        // Ya es WebP, solo redimensionamos si es necesario
+        // (sharp mantiene la animación si existe)
+        try {
+            webpBuffer = await sharp(bufferOriginal, { animated: true })
+                .resize(512, 512, {
+                    fit: 'contain',
+                    background: { r: 0, g: 0, b: 0, alpha: 0 }
+                })
+                .webp({ quality: 90, effort: 4 })
+                .toBuffer()
+        } catch {
+            // Si sharp falla, lo usamos tal cual
+            webpBuffer = bufferOriginal
+        }
+    } else {
+        // PNG, JPEG, GIF u otro: convertir a WebP con sharp
+        try {
+            webpBuffer = await sharp(bufferOriginal, { animated: true })
+                .resize(512, 512, {
+                    fit: 'contain',
+                    background: { r: 0, g: 0, b: 0, alpha: 0 }
+                })
+                .webp({ quality: 90, effort: 4 })
+                .toBuffer()
+        } catch (e) {
+            throw new Error(`No se pudo convertir el sticker: ${e.message}`)
+        }
+    }
+
+    // Verificar que sea WebP válido
+    const tipoFinal = detectarTipo(webpBuffer)
+    if (tipoFinal !== 'webp' && tipoFinal !== 'webp-animado') {
+        throw new Error(`Conversión falló: el resultado es ${tipoFinal}, no WebP`)
+    }
+
+    // Inyectar EXIF
+    return await inyectarExif(webpBuffer, packname, author)
 }
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
@@ -276,6 +343,7 @@ handler.before = async function (m, { conn }) {
             )
 
             let enviados = 0
+            let fallidos = 0
             const maxEnviar = 30
 
             for (const url of stickersUrls) {
@@ -294,9 +362,10 @@ handler.before = async function (m, { conn }) {
                         30000
                     )
 
-                    if (!res.ok) continue
+                    if (!res.ok) { fallidos++; continue }
 
                     const buffer = Buffer.from(await res.arrayBuffer())
+
                     const stickerBuffer = await convertirASticker(buffer, packname, author)
 
                     await conn.sendMessage(
@@ -309,13 +378,14 @@ handler.before = async function (m, { conn }) {
                     await esperar(500)
 
                 } catch (e) {
-                    console.error('[STICKERLY] Error enviando sticker:', e.message)
+                    fallidos++
+                    console.error('[STICKERLY] Error con sticker:', e.message)
                 }
             }
 
             if (enviados === 0) {
                 await m.react('✖️')
-                await conn.reply(m.chat, `${SIMBOLO} *No se pudo enviar ningún sticker*`, m)
+                await conn.reply(m.chat, `${SIMBOLO} *No se pudo enviar ningún sticker*\n\n> Fallidos: ${fallidos}`, m)
                 return true
             }
 
@@ -323,8 +393,9 @@ handler.before = async function (m, { conn }) {
                 m.chat,
                 `${SIMBOLO_OK} *Paquete enviado*\n\n` +
                 `> ${enviados} stickers de *${packname}*\n` +
-                `> Autor: ${author}\n\n` +
-                `> Toca "Agregar" en WhatsApp para guardarlo completo.`,
+                `> Autor: ${author}` +
+                (fallidos > 0 ? `\n> Fallidos: ${fallidos}` : '') +
+                `\n\n> Toca "Agregar" en WhatsApp para guardarlo completo.`,
                 m
             )
 
