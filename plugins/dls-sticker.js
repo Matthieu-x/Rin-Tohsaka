@@ -90,6 +90,50 @@ const buscarStickerly = async query => {
     return data.data.slice(0, MAX_RESULTADOS)
 }
 
+/**
+ * Convierte un preview de Stickerly en las URLs de todos los stickers del pack.
+ * El preview tiene la forma:
+ * https://stickerly.pstatic.net/sticker_pack/{ID1}/{ID2}/{PAGINA}/archivo.webp
+ * 
+ * Los stickers siguen la misma ruta pero con nombres de archivo numéricos/hash.
+ * Los extraemos del HTML público del pack.
+ */
+const extraerStickersDelPack = async urlPack => {
+    const res = await fetchConTimeout(
+        urlPack,
+        {
+            method: 'GET',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml',
+                'Accept-Language': 'en-US,en;q=0.9'
+            }
+        },
+        30000
+    )
+
+    if (!res.ok) throw new Error(`No se pudo acceder al pack (HTTP ${res.status})`)
+
+    const html = await res.text()
+
+    // Extraer todas las URLs del CDN de Stickerly con regex (más ligero que cheerio)
+    const regex = /https:\/\/stickerly\.pstatic\.net\/sticker_pack\/[^\s"'<>\\]+/g
+    const matches = html.match(regex) || []
+
+    // Filtrar duplicados y quedarnos solo con los stickers reales (no previews)
+    const unicos = [...new Set(matches)]
+
+    const stickers = unicos.filter(u => !u.includes('preview'))
+
+    const listaFinal = stickers.length >= 5 ? stickers : unicos
+
+    if (!listaFinal.length) throw new Error('No se encontraron stickers en el pack')
+
+    console.log(`[STICKERLY] Stickers encontrados: ${listaFinal.length}`)
+
+    return listaFinal
+}
+
 const handler = async (m, { conn, text, usedPrefix, command }) => {
     if (!text?.trim()) {
         await conn.reply(
@@ -111,21 +155,13 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         resultados = await buscarStickerly(consulta)
     } catch (error) {
         await m.react('✖️')
-        await conn.reply(
-            m.chat,
-            `${SIMBOLO} *Error buscando*\n\n> ${error?.message || 'Error desconocido'}`,
-            m
-        )
+        await conn.reply(m.chat, `${SIMBOLO} *Error buscando*\n\n> ${error?.message || 'Error desconocido'}`, m)
         return
     }
 
     if (!resultados?.length) {
         await m.react('✖️')
-        await conn.reply(
-            m.chat,
-            `${SIMBOLO} *Sin resultados*\n\n> No se encontró nada para *${consulta}*`,
-            m
-        )
+        await conn.reply(m.chat, `${SIMBOLO} *Sin resultados*\n\n> No se encontró nada para *${consulta}*`, m)
         return
     }
 
@@ -168,11 +204,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     } catch (error) {
         seleccionesPendientes.delete(clave)
         await m.react('✖️')
-        await conn.reply(
-            m.chat,
-            `${SIMBOLO} *No se pudo mostrar el selector*\n\n> ${error?.message || 'Error desconocido'}`,
-            m
-        )
+        await conn.reply(m.chat, `${SIMBOLO} *No se pudo mostrar el selector*\n\n> ${error?.message || 'Error desconocido'}`, m)
     }
 }
 
@@ -186,11 +218,7 @@ handler.before = async function (m, { conn }) {
 
         if (!pendiente || Date.now() > pendiente.expira) {
             seleccionesPendientes.delete(clave)
-            await conn.reply(
-                m.chat,
-                `${SIMBOLO} *Esa búsqueda ya venció*\n\n> Vuelve a buscar con .stickerly`,
-                m
-            )
+            await conn.reply(m.chat, `${SIMBOLO} *Esa búsqueda ya venció*\n\n> Vuelve a buscar con .stickerly`, m)
             return true
         }
 
@@ -207,14 +235,7 @@ handler.before = async function (m, { conn }) {
         await m.react('🕒')
 
         try {
-            const { stickerly } = await import('ruhend-scraper')
-            const data = await stickerly(resultado.url)
-
-            if (!data?.download || !data.download.length) {
-                await m.react('✖️')
-                await conn.reply(m.chat, `${SIMBOLO} *No se pudo descargar el paquete*`, m)
-                return true
-            }
+            const stickersUrls = await extraerStickersDelPack(resultado.url)
 
             const packname = (resultado.name || 'Stickerly').slice(0, 60)
             const author = (resultado.author || 'Desconocido').slice(0, 40)
@@ -224,7 +245,7 @@ handler.before = async function (m, { conn }) {
                 `${SIMBOLO} *Enviando paquete de stickers*\n\n` +
                 `> Nombre: ${packname}\n` +
                 `> Autor: ${author}\n` +
-                `> Cantidad: ${data.download.length} stickers\n\n` +
+                `> Cantidad: ${stickersUrls.length} stickers\n\n` +
                 `${SIMBOLO_NOTA} En WhatsApp toca "Agregar" para guardar el pack completo.`,
                 m
             )
@@ -232,7 +253,7 @@ handler.before = async function (m, { conn }) {
             let enviados = 0
             const maxEnviar = 30
 
-            for (const url of data.download) {
+            for (const url of stickersUrls) {
                 if (enviados >= maxEnviar) break
 
                 try {
@@ -240,7 +261,10 @@ handler.before = async function (m, { conn }) {
                         url,
                         {
                             method: 'GET',
-                            headers: { 'User-Agent': 'Rin-Tohsaka/1.0' }
+                            headers: {
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                                'Referer': 'https://sticker.ly/'
+                            }
                         },
                         30000
                     )
@@ -249,10 +273,13 @@ handler.before = async function (m, { conn }) {
 
                     const buffer = Buffer.from(await res.arrayBuffer())
 
+                    // Detectar formato: si es webp animado o estático
+                    const esAnimado = buffer.slice(0, 4).toString('hex') === '52494646' && buffer.includes(Buffer.from('ANIM'))
+
                     const stickerBuffer = await new Sticker(buffer, {
                         pack: packname,
                         author: author,
-                        type: StickerTypes.FULL,
+                        type: esAnimado ? StickerTypes.FULL : StickerTypes.DEFAULT,
                         categories: ['🎨']
                     }).toBuffer()
 
@@ -290,11 +317,7 @@ handler.before = async function (m, { conn }) {
         } catch (error) {
             console.error('[STICKERLY] Error procesando:', error)
             await m.react('✖️')
-            await conn.reply(
-                m.chat,
-                `${SIMBOLO} *Error procesando*\n\n> ${error?.message || 'Error desconocido'}`,
-                m
-            )
+            await conn.reply(m.chat, `${SIMBOLO} *Error procesando*\n\n> ${error?.message || 'Error desconocido'}`, m)
         }
 
         return true
