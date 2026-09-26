@@ -1,5 +1,6 @@
 import fetch from 'node-fetch'
-import { Sticker, StickerTypes } from 'wa-sticker-formatter'
+import sharp from 'sharp'
+import webpmux from 'node-webpmux'
 
 const SIMBOLO = 'ꕥ'
 const SIMBOLO_ALT = '〄'
@@ -90,14 +91,6 @@ const buscarStickerly = async query => {
     return data.data.slice(0, MAX_RESULTADOS)
 }
 
-/**
- * Convierte un preview de Stickerly en las URLs de todos los stickers del pack.
- * El preview tiene la forma:
- * https://stickerly.pstatic.net/sticker_pack/{ID1}/{ID2}/{PAGINA}/archivo.webp
- * 
- * Los stickers siguen la misma ruta pero con nombres de archivo numéricos/hash.
- * Los extraemos del HTML público del pack.
- */
 const extraerStickersDelPack = async urlPack => {
     const res = await fetchConTimeout(
         urlPack,
@@ -111,27 +104,59 @@ const extraerStickersDelPack = async urlPack => {
         },
         30000
     )
-
     if (!res.ok) throw new Error(`No se pudo acceder al pack (HTTP ${res.status})`)
 
     const html = await res.text()
-
-    // Extraer todas las URLs del CDN de Stickerly con regex (más ligero que cheerio)
     const regex = /https:\/\/stickerly\.pstatic\.net\/sticker_pack\/[^\s"'<>\\]+/g
     const matches = html.match(regex) || []
-
-    // Filtrar duplicados y quedarnos solo con los stickers reales (no previews)
     const unicos = [...new Set(matches)]
-
     const stickers = unicos.filter(u => !u.includes('preview'))
-
     const listaFinal = stickers.length >= 5 ? stickers : unicos
 
     if (!listaFinal.length) throw new Error('No se encontraron stickers en el pack')
 
-    console.log(`[STICKERLY] Stickers encontrados: ${listaFinal.length}`)
-
     return listaFinal
+}
+
+/**
+ * Convierte un buffer de imagen a WebP sticker con metadatos EXIF del pack.
+ * 1. sharp convierte a WebP 512x512 limpio
+ * 2. node-webpmux inyecta el pack y autor en el EXIF
+ */
+const convertirASticker = async (buffer, packname, author) => {
+    // 1. Convertir con sharp a WebP estándar
+    const webpBuffer = await sharp(buffer, { animated: true })
+        .resize(512, 512, {
+            fit: 'contain',
+            background: { r: 0, g: 0, b: 0, alpha: 0 }
+        })
+        .webp({ quality: 90 })
+        .toBuffer()
+
+    // 2. Inyectar metadatos EXIF con node-webpmux
+    const img = new webpmux.Image()
+    await img.load(webpBuffer)
+
+    const json = {
+        'sticker-pack-id': 'stickerly_' + Date.now(),
+        'sticker-pack-name': packname,
+        'sticker-pack-publisher': author,
+        'emojis': ['🎨']
+    }
+
+    const exifAttr = Buffer.from([
+        0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00,
+        0x01, 0x00, 0x41, 0x57, 0x07, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x16, 0x00, 0x00, 0x00
+    ])
+
+    const jsonBuffer = Buffer.from(JSON.stringify(json), 'utf8')
+    const exif = Buffer.concat([exifAttr, jsonBuffer])
+    exif.writeUIntLE(jsonBuffer.length, 14, 4)
+
+    img.exif = exif
+
+    return await img.save(null)
 }
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
@@ -272,16 +297,7 @@ handler.before = async function (m, { conn }) {
                     if (!res.ok) continue
 
                     const buffer = Buffer.from(await res.arrayBuffer())
-
-                    // Detectar formato: si es webp animado o estático
-                    const esAnimado = buffer.slice(0, 4).toString('hex') === '52494646' && buffer.includes(Buffer.from('ANIM'))
-
-                    const stickerBuffer = await new Sticker(buffer, {
-                        pack: packname,
-                        author: author,
-                        type: esAnimado ? StickerTypes.FULL : StickerTypes.DEFAULT,
-                        categories: ['🎨']
-                    }).toBuffer()
+                    const stickerBuffer = await convertirASticker(buffer, packname, author)
 
                     await conn.sendMessage(
                         m.chat,
@@ -290,7 +306,7 @@ handler.before = async function (m, { conn }) {
                     )
 
                     enviados++
-                    await esperar(350)
+                    await esperar(500)
 
                 } catch (e) {
                     console.error('[STICKERLY] Error enviando sticker:', e.message)
