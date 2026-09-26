@@ -24,6 +24,7 @@
   "dependencies": {
     "@bochilteam/scraper": "^4.2.4",
     "@hapi/boom": "^10.0.1",
+    "@napi-rs/canvas": "^0.1.65",
     "@vitalets/google-translate-api": "^8.0.0",
     "baileys": "github:russellxz/ultra-baileys",
     "acrcloud": "^1.4.0",
@@ -67,8 +68,7 @@
   },
   "optionalDependencies": {
     "moment-timezone": "^0.5.37",
-    "wa-sticker-formatter": "^4.3.2",
-    "canvas": "^2.11.2"
+    "wa-sticker-formatter": "^4.3.2"
   },
   "engines": {
     "node": ">=22.0.0"
