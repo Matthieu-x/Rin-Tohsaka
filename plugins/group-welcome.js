@@ -233,7 +233,7 @@ handler.help = [
     'verwelcome'
 ]
 
-handler.tags = ['grupos']
+handler.tags = ['group']
 
 handler.command = [
     'welcome',
