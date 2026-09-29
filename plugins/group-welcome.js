@@ -38,17 +38,46 @@ const handler = async (m, { conn, text, usedPrefix, command, isAdmin, isOwner })
         return
     }
 
+    const p = usedPrefix
+
     switch (command) {
-        case 'welcome': {
+        // ====================================================================
+        // WELCOME - MENÚ PRINCIPAL
+        // ====================================================================
+        case 'welcome':
+        case 'bienvenida': {
             if (!text?.trim()) {
-                const estado = chat.welcome ? 'activado' : 'desactivado'
+                const estado = chat.welcome ? 'Activado' : 'Desactivado'
+                const mensajeBienvenida = chat.sWelcome?.trim() ? chat.sWelcome : `_(predeterminado)_`
+                const mensajeDespedida = chat.sBye?.trim() ? chat.sBye : `_(predeterminado)_`
+
                 await conn.reply(
                     m.chat,
-                    `${SIMBOLO} *Sistema de bienvenida*\n\n` +
-                    `> Estado actual: *${estado}*\n\n` +
-                    `${SIMBOLO_ALT} *Uso:*\n` +
-                    `> *${usedPrefix}welcome on* — Activar\n` +
-                    `> *${usedPrefix}welcome off* — Desactivar`,
+                    `${SIMBOLO} *Configuración de bienvenidas*\n\n` +
+
+                    `${SIMBOLO_ALT} *Estado actual:*\n` +
+                    `> Bienvenidas: *${estado}*\n` +
+                    `> Mensaje bienvenida: ${mensajeBienvenida}\n` +
+                    `> Mensaje despedida: ${mensajeDespedida}\n\n` +
+
+                    `${SIMBOLO_NOTA} *Comandos disponibles:*\n\n` +
+
+                    `> *${p}welcome on* — Activar bienvenidas\n` +
+                    `> *${p}welcome off* — Desactivar bienvenidas\n\n` +
+
+                    `> *${p}setwelcome <mensaje>* — Configurar mensaje de bienvenida\n` +
+                    `> *${p}setbye <mensaje>* — Configurar mensaje de despedida\n\n` +
+
+                    `> *${p}resetwelcome* — Restaurar bienvenida predeterminada\n` +
+                    `> *${p}resetbye* — Restaurar despedida predeterminada\n\n` +
+
+                    `> *${p}verwelcome* — Ver la configuración completa\n\n` +
+
+                    `${SIMBOLO_ALT} *Variables disponibles:*\n` +
+                    `> *@user* — Menciona al usuario\n` +
+                    `> *@grupo* — Nombre del grupo\n` +
+                    `> *@total* — Total de miembros\n` +
+                    `> *@desc* — Descripción del grupo`,
                     m
                 )
                 return
@@ -63,18 +92,28 @@ const handler = async (m, { conn, text, usedPrefix, command, isAdmin, isOwner })
                 chat.welcome = false
                 await conn.reply(m.chat, `${SIMBOLO_OK} *Bienvenidas desactivadas*`, m)
             } else {
-                await conn.reply(m.chat, `${SIMBOLO} *Opción inválida*\n\n> Usa *on* o *off*`, m)
+                await conn.reply(
+                    m.chat,
+                    `${SIMBOLO_X} *Opción inválida*\n\n` +
+                    `> Usa *on* o *off*\n` +
+                    `> Ejemplo: *${p}welcome on*`,
+                    m
+                )
             }
             return
         }
 
-        case 'setwelcome': {
+        // ====================================================================
+        // SETWELCOME
+        // ====================================================================
+        case 'setwelcome':
+        case 'setbienvenida': {
             if (!text?.trim()) {
                 await conn.reply(
                     m.chat,
                     `${SIMBOLO} *Falta el mensaje*\n\n` +
                     `*Ejemplo:*\n` +
-                    `> *${usedPrefix}setwelcome* Hola @user, bienvenido a @grupo\n\n` +
+                    `> *${p}setwelcome* Hola @user, bienvenido a @grupo\n\n` +
                     `${SIMBOLO_ALT} *Variables disponibles:*\n` +
                     `> *@user* — Menciona al usuario\n` +
                     `> *@grupo* — Nombre del grupo\n` +
@@ -85,13 +124,7 @@ const handler = async (m, { conn, text, usedPrefix, command, isAdmin, isOwner })
                 return
             }
 
-            let nuevoMensaje = text.trim()
-
-            const quoted = m.quoted?.text || m.quoted?.body || null
-            if (!nuevoMensaje && quoted) {
-                nuevoMensaje = quoted
-            }
-
+            const nuevoMensaje = text.trim()
             chat.sWelcome = nuevoMensaje
             chat.welcome = true
 
@@ -105,13 +138,17 @@ const handler = async (m, { conn, text, usedPrefix, command, isAdmin, isOwner })
             return
         }
 
-        case 'setbye': {
+        // ====================================================================
+        // SETBYE
+        // ====================================================================
+        case 'setbye':
+        case 'setdespedida': {
             if (!text?.trim()) {
                 await conn.reply(
                     m.chat,
                     `${SIMBOLO} *Falta el mensaje*\n\n` +
                     `*Ejemplo:*\n` +
-                    `> *${usedPrefix}setbye* Adiós @user, esperamos verte pronto\n\n` +
+                    `> *${p}setbye* Adiós @user, esperamos verte pronto\n\n` +
                     `${SIMBOLO_ALT} *Variables disponibles:*\n` +
                     `> *@user* — Menciona al usuario\n` +
                     `> *@grupo* — Nombre del grupo\n` +
@@ -136,6 +173,9 @@ const handler = async (m, { conn, text, usedPrefix, command, isAdmin, isOwner })
             return
         }
 
+        // ====================================================================
+        // RESETWELCOME
+        // ====================================================================
         case 'resetwelcome': {
             chat.sWelcome = ''
             await conn.reply(
@@ -147,6 +187,9 @@ const handler = async (m, { conn, text, usedPrefix, command, isAdmin, isOwner })
             return
         }
 
+        // ====================================================================
+        // RESETBYE
+        // ====================================================================
         case 'resetbye': {
             chat.sBye = ''
             await conn.reply(
@@ -158,6 +201,9 @@ const handler = async (m, { conn, text, usedPrefix, command, isAdmin, isOwner })
             return
         }
 
+        // ====================================================================
+        // VERWELCOME - VER CONFIGURACIÓN
+        // ====================================================================
         case 'verwelcome': {
             const mensajeBienvenida = chat.sWelcome?.trim() ? chat.sWelcome : `_(predeterminado)_ ${MENSAJE_BIENVENIDA_DEFAULT}`
             const mensajeDespedida = chat.sBye?.trim() ? chat.sBye : `_(predeterminado)_ ${MENSAJE_DESPEDIDA_DEFAULT}`
