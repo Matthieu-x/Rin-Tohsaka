@@ -1,6 +1,14 @@
 const SIMBOLO = 'ꕥ'
 const SIMBOLO_ALT = '〄'
 
+function esAdminDeGrupo(jid, groupMetadata) {
+  if (!jid || !groupMetadata?.participants) return false
+  const p = groupMetadata.participants.find(
+    (x) => x.id === jid || x.lid === jid
+  )
+  return !!p && (p.admin === 'admin' || p.admin === 'superadmin')
+}
+
 function resolverJid(raw, participants) {
   if (!raw) return raw
   if (raw.endsWith('@lid')) {
@@ -10,8 +18,10 @@ function resolverJid(raw, participants) {
   return raw
 }
 
-const handler = async (m, { conn, participants, isAdmin, isOwner }) => {
-  if (!isAdmin && !isOwner) {
+const handler = async (m, { conn, participants, groupMetadata, isAdmin, isOwner }) => {
+  const adminReal = esAdminDeGrupo(m.sender, groupMetadata)
+
+  if (!adminReal && !isAdmin && !isOwner) {
     await m.react('✖️')
     await conn.reply(
       m.chat,
@@ -46,13 +56,9 @@ const handler = async (m, { conn, participants, isAdmin, isOwner }) => {
 
     await conn.sendMessage(
       m.chat,
-      {
-        text: texto,
-        mentions: [objetivo, m.sender]
-      },
+      { text: texto, mentions: [objetivo, m.sender] },
       { quoted: m }
     )
-
     await m.react('✔️')
   } catch (error) {
     await m.react('✖️')
@@ -69,6 +75,7 @@ handler.tags = ['group']
 handler.command = ['promote', 'admin']
 handler.description = 'Da admin a un usuario del grupo'
 handler.group = true
+handler.admin = true          
 handler.botAdmin = true
 
 export default handler
