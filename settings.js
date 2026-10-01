@@ -7,12 +7,12 @@ global.botNumber = ""
 
 global.owner = [
   // ZONA DE JIDS
-  ["50497305037", "Edward </>", true],
+  ["205724672110753", "Edward </>", true],
   ["56971357971", "Snowsita", true],
   ["", "", true],
 
   // ZONA DE LIDS
-  ["77623648624677", "Edward", true],
+  ["205724672110753", "Edward", true],
   ["652851847270", "Snowsita", true],
   ["23210439508110", "Yosue", true]
 ]
