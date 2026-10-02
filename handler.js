@@ -29,7 +29,7 @@ export async function handler(chatUpdate) {
     if (!m) return;
 
     let prefixRegex = global.prefix;
-    let usedPrefix = global.prefix || ""; // Valor predeterminado para usedPrefix
+    let usedPrefix = global.prefix || "";
     const senderNumber = this.jid.split('@')[0];
     if (!prefixCache.has(senderNumber)) {
         const botPath = path.join('./Sessions/SubBot', senderNumber);
@@ -76,6 +76,7 @@ export async function handler(chatUpdate) {
         warn: 0
     });
 
+    // Aquí se crea el chat con modoadmin: false por defecto
     const chat = global.db.data.chats[m.chat] || (global.db.data.chats[m.chat] = {
         isBanned: false,
         botOff: false,
@@ -92,19 +93,18 @@ export async function handler(chatUpdate) {
     });
 
     if (chat.isBanned) {
-
-    const textLower = m.text?.toLowerCase() || ''
-    if (
-        !textLower.startsWith('.unbanchat') &&
-        !textLower.startsWith('/unbanchat') &&
-        !textLower.startsWith('!unbanchat') &&
-        !textLower.startsWith('.desbanearbot') &&
-        !textLower.startsWith('/desbanearbot') &&
-        !textLower.startsWith('!desbanearbot')
-    ) {
-        return
+        const textLower = m.text?.toLowerCase() || ''
+        if (
+            !textLower.startsWith('.unbanchat') &&
+            !textLower.startsWith('/unbanchat') &&
+            !textLower.startsWith('!unbanchat') &&
+            !textLower.startsWith('.desbanearbot') &&
+            !textLower.startsWith('/desbanearbot') &&
+            !textLower.startsWith('!desbanearbot')
+        ) {
+            return
+        }
     }
- }
 
     if (chat.botOff) {
         const textLower = m.text?.toLowerCase() || ''
@@ -177,6 +177,29 @@ export async function handler(chatUpdate) {
     const isAdmin = isRAdmin || userGroup?.admin === "admin";
     const isBotAdmin = botGroup?.admin;
 
+    // ============================================================
+    // CHECK DE MODO ADMIN
+    // ============================================================
+    // Si el grupo tiene modoadmin activado, solo se permite a admins
+    // (o al owner) usar comandos. Otros usuarios son ignorados silenciosamente.
+    if (chat.modoadmin && m.isGroup && !isOwner && !isAdmin) {
+        const textLower = (m.text || '').toLowerCase().trim()
+        // Permitir los comandos del propio modoadmin para que se pueda desactivar
+        const permitidos = [
+            'modoadmin off',
+            'modoadmin',
+            'adminmode off',
+            'soloadmin off',
+            '.modoadmin off',
+            '/modoadmin off',
+            '!modoadmin off',
+            '#modoadmin off'
+        ]
+        const esPermitido = permitidos.some(p => textLower.startsWith(p))
+        if (!esPermitido) return
+    }
+    // ============================================================
+
     const ___dirname = path.join(path.dirname(fileURLToPath(import.meta.url)), "./plugins");
     for (const name in global.plugins) {
         const plugin = global.plugins[name];
@@ -221,7 +244,7 @@ export async function handler(chatUpdate) {
             })) continue;
         }
 
-        usedPrefix = (match[0] || "")[0]; // Asignación de usedPrefix dentro del bucle
+        usedPrefix = (match[0] || "")[0];
         if (!usedPrefix) continue;
 
         const noPrefix = m.text.replace(usedPrefix, "");
