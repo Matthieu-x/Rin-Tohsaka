@@ -1,3 +1,5 @@
+const SIMBOLO = 'ꕥ'
+
 const handler = async (m, { conn, args, command }) => {
   const query = args.join(' ').trim()
 
