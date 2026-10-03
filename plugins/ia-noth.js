@@ -24,7 +24,7 @@ const handler = async (m, { conn, text }) => {
         'X-API-Key': API_KEY
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'claude-3-5-sonnet-latest',
         messages: [
           {
             role: 'user',
