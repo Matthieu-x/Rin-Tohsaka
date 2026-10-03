@@ -1,3 +1,5 @@
+import fetch from 'node-fetch'
+
 const SIMBOLO = 'ꕥ'
 
 const handler = async (m, { conn, args, command }) => {
@@ -13,11 +15,7 @@ const handler = async (m, { conn, args, command }) => {
 
   try {
     const url = `https://api.delirius.online/search/googlesearch?query=${encodeURIComponent(query)}`
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0'
-      }
-    })
+    const response = await fetch(url)
     const json = await response.json()
 
     if (!json.success || !json.data?.length) {
@@ -41,8 +39,7 @@ const handler = async (m, { conn, args, command }) => {
     await conn.sendMessage(
       m.chat,
       { text: `${SIMBOLO} Error al buscar: ${error.message}` },
-      { quoted: m }
-    )
+      { quoted: m )
   }
 }
 
