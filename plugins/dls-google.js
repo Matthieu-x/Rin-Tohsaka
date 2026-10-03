@@ -43,3 +43,5 @@ const handler = async (m, { conn, args, command }) => {
 handler.help = ['google', 'search', 'g']
 handler.tags = ['tools']
 handler.command = ['google', 'search', 'g']
+
+export default handler
