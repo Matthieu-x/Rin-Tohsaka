@@ -14,7 +14,7 @@ const ZONA_POR_DEFECTO =
   'America/Tegucigalpa'
 
 const CREADOR =
-  'Edward'
+  'Snowsita'
 
 const API_URL =
   'https://noth.hidenplay.net'
@@ -208,7 +208,7 @@ const construirBloqueCategoria = (
     capitalizar(tag)
 
   let bloque =
-    `\n╭─❑ ${nombreVisible.toUpperCase()} ❑\n`
+    `\n╭─❑ 🎃 ${nombreVisible.toUpperCase()} 🎃 ❑\n`
 
   for (const plugin of plugins) {
     const aliases =
@@ -228,7 +228,7 @@ const construirBloqueCategoria = (
         .join(' , ')
 
     bloque +=
-      `│ ${linea}\n`
+      `│ 🕷️ ${linea}\n`
 
     const descripcion =
       obtenerDescripcionComando(plugin)
@@ -363,10 +363,13 @@ const handler = async (
       ]
     ) || {}
 
-  const nombreBot =
+  const nombreBotBase =
     obtenerNombreIdentidad(conn) ||
     global.botname ||
     'Rin-Tohsaka'
+
+  const nombreBot =
+    `${nombreBotBase} 🎃`
 
   const modo =
     settingsConn.self
@@ -458,22 +461,22 @@ const handler = async (
     m.sender.split('@')[0]
 
   // ===================================================
-  // DECORACIÓN DEBAJO DE LA FOTO (sin link de texto suelto,
-  // el link se muestra como tarjeta - ver contextInfo)
+  // DECORACIÓN DEBAJO DE LA FOTO
   // ===================================================
 
   const presentacion = ''
 
   // ===================================================
-  // SALUDO
+  // SALUDO HALLOWEEN
   // ===================================================
 
   const saludoMencion =
-    `Hola *${mention}* soy *${nombreBot}*, tu asistente virtual\n` +
-    `Aquí tienes el menú de mis comandos.\n\n`
+    `🎃 Hola *${mention}* soy *${nombreBot}* 🦇\n` +
+    `👻 Tu asistente virtual en esta noche de Halloween.\n` +
+    `🕷️ Aquí tienes el menú de mis comandos 🕸️\n\n`
 
   // ===================================================
-  // ENCABEZADO (lista plana estilo Alya, sin cajas)
+  // ENCABEZADO HALLOWEEN
   // ===================================================
 
   let encabezado =
@@ -510,7 +513,7 @@ const handler = async (
     `— *PREMIUM* › ${totalPremium}\n`
 
   encabezado +=
-    `— *COMANDOS* › ${totalPlugins}\n\n`
+    `— *COMANDOS* › ${totalPlugins} 👻\n\n`
 
   // ===================================================
   // COMANDOS
@@ -568,14 +571,17 @@ const handler = async (
   }
 
   // ===================================================
-  // TEXTO FINAL
+  // TEXTO FINAL HALLOWEEN
   // ===================================================
 
   const textoFinal =
     presentacion +
     saludoMencion +
     encabezado +
-    cuerpo
+    cuerpo +
+    `\n🦇 ───────────────── 🦇\n` +
+    `🎃 👻 *¡Feliz Halloween!* 👻 🎃\n` +
+    `🕸️ _— ${CREADOR} · ${nombreBot}_ 🕸️`
 
   // ===================================================
   // IMAGEN
@@ -607,6 +613,19 @@ const handler = async (
       serverMessageId: 143
     }
   }
+
+  // ===================================================
+  // REACCIÓN HALLOWEEN
+  // ===================================================
+
+  try {
+    await conn.sendMessage(m.chat, {
+      react: {
+        text: '🎃',
+        key: m.key
+      }
+    })
+  } catch (e) {}
 
   // ===================================================
   // ENVIAR
