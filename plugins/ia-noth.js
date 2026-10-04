@@ -6,7 +6,7 @@ const MODELO = 'noth-oss'
 if (!global.modoNoth) global.modoNoth = new Map()
 if (!global.historialNoth) global.historialNoth = new Map()
 
-const MAX_HISTORIAL = 20
+const MAX_HISTORIAL = 100
 
 async function preguntarIA(pregunta, chatId) {
   const historial = global.historialNoth.get(chatId) || []
