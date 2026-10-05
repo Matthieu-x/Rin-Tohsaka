@@ -5,7 +5,7 @@ import {
 } from '../lib/identidad.js'
 
 const URL_FOTO_MENU =
-  'https://instasize.com/p/6ad095663446aec659ceaed52b1fa359846e071596446432c27b4e76f5ff1f87'
+  'https://i.ibb.co/0RPdqLZJ/file-000000004b9081f5b00c47a80c0c8d12.png'
 
 const CANAL_JID =
   '120363410031000704@newsletter'
