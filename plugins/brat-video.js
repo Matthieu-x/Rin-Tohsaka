@@ -1,3 +1,11 @@
+import fs from 'fs'
+import path from 'path'
+import { tmpdir } from 'os'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+
+const execAsync = promisify(exec)
+
 const SIMBOLO = 'ꕥ'
 const SIMBOLO_ALT = '〄'
 
@@ -5,6 +13,9 @@ const API_URL = 'https://noth.hidenplay.net/api/herramientas/bratvideo'
 const API_KEY = 'nothPniC'
 
 const handler = async (m, { conn, text, args, usedPrefix, command }) => {
+  const tmpIn = path.join(tmpdir(), `brat_${Date.now()}.mp4`)
+  const tmpOut = path.join(tmpdir(), `brat_${Date.now()}.webp`)
+
   try {
     const texto = text?.trim() || args.join(' ').trim()
 
@@ -12,7 +23,7 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
       await m.react('✖️')
       return conn.reply(
         m.chat,
-        `${SIMBOLO} *Ingresa un texto para generar el video*\n\n` +
+        `${SIMBOLO} *Ingresa un texto para generar el sticker*\n\n` +
         `${SIMBOLO_ALT} *Ejemplo*\n` +
         `> ${usedPrefix + command} Noth API`,
         m
@@ -30,20 +41,23 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
     }
 
     const videoUrl = json.data.url
-    const caption =
-      `${SIMBOLO} *Brat Video*\n\n` +
-      `${SIMBOLO_ALT} *Detalles*\n` +
-      `> Texto: ${texto}\n` +
-      `> Tipo: ${json.data.type}\n` +
-      `> Solicitado por: @${m.sender.split('@')[0]}`
+
+    // Descargar el video
+    const videoRes = await fetch(videoUrl)
+    if (!videoRes.ok) throw new Error('No se pudo descargar el video')
+    const buffer = Buffer.from(await videoRes.arrayBuffer())
+    fs.writeFileSync(tmpIn, buffer)
+
+    // Convertir a sticker (webp animado)
+    await execAsync(
+      `ffmpeg -y -i "${tmpIn}" -vf "scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=white,fps=15" -c:v libwebp -lossless 0 -q:v 60 -loop 0 -preset default -an -vsync 0 "${tmpOut}"`
+    )
+
+    const stickerBuffer = fs.readFileSync(tmpOut)
 
     await conn.sendMessage(
       m.chat,
-      {
-        video: { url: videoUrl },
-        caption,
-        mentions: [m.sender]
-      },
+      { sticker: stickerBuffer },
       { quoted: m }
     )
 
@@ -52,15 +66,18 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
     await m.react('✖️')
     await conn.reply(
       m.chat,
-      `${SIMBOLO} *No se pudo generar el video*\n\n> ${error.message}`,
+      `${SIMBOLO} *No se pudo generar el sticker*\n\n> ${error.message}`,
       m
     )
+  } finally {
+    try { if (fs.existsSync(tmpIn)) fs.unlinkSync(tmpIn) } catch {}
+    try { if (fs.existsSync(tmpOut)) fs.unlinkSync(tmpOut) } catch {}
   }
 }
 
 handler.help = ['brat <texto>']
-handler.tags = ['tools']
-handler.command = ['brat', 'bratvideo']
-handler.description = 'Genera un video estilo brat con el texto indicado'
+handler.tags = ['sticker']
+handler.command = ['brat', 'bratvideo', 'bratsticker']
+handler.description = 'Genera un sticker estilo brat con el texto indicado'
 
 export default handler
